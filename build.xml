@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+
+<project xmlns:ivy="antlib:org.apache.ivy.ant" name="tries" default="package" basedir=".">
+
+  <property name="project.name" value="tries" />
+  <property name="project.version" value="0.1" />
+  <property name="src.dir" value="src/java" />
+  <property name="test.src.dir" value="src/test" />
+  <property name="build.dir" value="build" />
+  <property name="dist.dir" value="dist" />
+  <property name="build.classes" value="${build.dir}/classes" />
+  <property name="test.build.classes" value="${build.dir}/test-classes" />
+  <property name="dist.jar" value="${dist.dir}/${project.name}-${project.version}.jar"/>
+  <property name="lib.dir" value="lib" />
+  <property name="javac.target" value="5" />
+  <property name="javac.source" value="5" />
+
+  <path id="classpath">
+    <fileset dir="${lib.dir}" includes="*.jar"/>
+  </path>
+
+  <path id="test.classpath">
+    <pathelement path="classpath" />
+    <pathelement location="${build.classes}" />
+  </path>
+
+  <target name="init">
+    <mkdir dir="${build.dir}" />
+    <ivy:retrieve />
+  </target>
+
+  <target name="compile" depends="init">
+    <mkdir dir="${build.classes}" />
+    <javac srcdir="${src.dir}"
+        destdir="${build.classes}"
+        target="${javac.target}"
+        source="${javac.source}">
+      <classpath refid="classpath"/>
+    </javac>
+  </target>
+
+  <target name="compile-tests" depends="compile">
+   <mkdir dir="${test.build.classes}" />
+    <javac srcdir="${test.src.dir}"
+        destdir="${test.build.classes}"
+        target="${javac.target}"
+        source="${javac.source}">
+      <classpath refid="test.classpath"/>
+    </javac>    
+  </target>
+
+  <target name="package" depends="compile">
+   <mkdir dir="${dist.dir}" />
+    <jar destfile="${dist.jar}"
+        basedir="${build.classes}" />
+  </target>
+
+  <target name="clean">
+    <delete dir="${build.dir}" />
+    <delete dir="${dist.dir}" />
+    <delete dir="${lib.dir}" />
+  </target>
+
+</project>
