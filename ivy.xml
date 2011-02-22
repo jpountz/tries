@@ -2,6 +2,7 @@
   <info organisation="org.apache" module="hello-ivy"/>
   <dependencies>
     <dependency org="fastutil" name="fastutil" rev="5.0.9" conf="* -> *,!sources,!javadoc" />
+    <dependency org="junit" name="junit" rev="4.6" conf="* -> *,!sources,!javadoc" />
   </dependencies>
 </ivy-module>
 

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<project xmlns:ivy="antlib:org.apache.ivy.ant" name="tries" default="package" basedir=".">
+<project xmlns:ivy="antlib:org.apache.ivy.ant" name="tries" default="dist" basedir=".">
 
   <property name="project.name" value="tries" />
   <property name="project.version" value="0.1" />
@@ -12,17 +12,9 @@
   <property name="test.build.classes" value="${build.dir}/test-classes" />
   <property name="dist.jar" value="${dist.dir}/${project.name}-${project.version}.jar"/>
   <property name="lib.dir" value="lib" />
+  <property name="test.reports.dir" value="${build.dir}/test-reports" />
   <property name="javac.target" value="5" />
   <property name="javac.source" value="5" />
-
-  <path id="classpath">
-    <fileset dir="${lib.dir}" includes="*.jar"/>
-  </path>
-
-  <path id="test.classpath">
-    <pathelement path="classpath" />
-    <pathelement location="${build.classes}" />
-  </path>
 
   <target name="init">
     <mkdir dir="${build.dir}" />
@@ -35,7 +27,9 @@
         destdir="${build.classes}"
         target="${javac.target}"
         source="${javac.source}">
-      <classpath refid="classpath"/>
+      <classpath>
+        <fileset dir="${lib.dir}" includes="*.jar"/>
+      </classpath>
     </javac>
   </target>
 
@@ -45,11 +39,32 @@
         destdir="${test.build.classes}"
         target="${javac.target}"
         source="${javac.source}">
-      <classpath refid="test.classpath"/>
+      <classpath>
+        <fileset dir="${lib.dir}" includes="*.jar"/>
+        <pathelement location="${build.classes}" />
+      </classpath>
     </javac>    
   </target>
 
-  <target name="package" depends="compile">
+  <target name="test" depends="compile-tests">
+    <mkdir dir="${test.reports.dir}" />
+    <junit printsummary="yes" haltonfailure="no">
+      <classpath>
+        <fileset dir="${lib.dir}" includes="*.jar"/>
+        <pathelement location="${build.classes}" />
+        <pathelement location="${test.build.classes}"/>
+      </classpath>
+      <batchtest fork="yes" todir="${test.reports.dir}">
+        <fileset dir="${test.src.dir}">
+          <include name="**/*Test.java" />
+          <exclude name="**/Abstract*.java" />
+        </fileset>
+      </batchtest>
+
+    </junit>
+  </target>
+
+  <target name="dist" depends="compile">
    <mkdir dir="${dist.dir}" />
     <jar destfile="${dist.jar}"
         basedir="${build.classes}" />
