@@ -1,5 +1,9 @@
 package net.jpountz.trie;
 
+import java.util.Iterator;
+
+import net.jpountz.trie.Trie.Cursor;
+import net.jpountz.trie.Trie.Entry;
 import it.unimi.dsi.fastutil.chars.CharArrayList;
 import junit.framework.TestCase;
 
@@ -102,13 +106,40 @@ public abstract class AbstractTrieTest extends TestCase {
 		Cursor<Integer> cursor = trie.getCursor();
 		assertFalse(cursor.moveToParent());
 		CharArrayList children = new CharArrayList();
-		cursor.getChildren(children);
+		cursor.getChildrenLabels(children);
 		assertEquals(0, children.size());
 		cursor.addChild('a');
-		cursor.getChildren(children);
+		cursor.getChildrenLabels(children);
 		assertEquals(0, children.size());
 		assertTrue(cursor.moveToParent());
-		cursor.getChildren(children);
+		cursor.getChildrenLabels(children);
 		assertEquals(1, children.size());
+	}
+
+	public void testGetSuffixes() {
+		trie.put("ab", 1);
+		trie.put("abcd", 2);
+		trie.put("aed", 4);
+		trie.put("aef", 3);
+		trie.put("a", 0);
+		Cursor<Integer> cursor = trie.getCursor();
+		cursor.moveToChild('a');
+		Iterator<Entry<Integer>> suffixes = cursor.getSuffixes().iterator();
+		assertEquals(true, suffixes.hasNext());
+		Entry<Integer> next = suffixes.next();
+		assertEquals("", next.getKey().toString());
+		assertEquals(true, suffixes.hasNext());
+		next = suffixes.next();
+		assertEquals("b", next.getKey().toString());
+		assertEquals(true, suffixes.hasNext());
+		next = suffixes.next();
+		assertEquals("bcd", next.getKey().toString());
+		assertEquals(true, suffixes.hasNext());
+		next = suffixes.next();
+		assertEquals("ed", next.getKey().toString());
+		assertEquals(true, suffixes.hasNext());
+		next = suffixes.next();
+		assertEquals("ef", next.getKey().toString());
+		assertEquals(false, suffixes.hasNext());
 	}
 }

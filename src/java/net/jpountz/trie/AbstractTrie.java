@@ -1,10 +1,37 @@
 package net.jpountz.trie;
 
+
 /**
  * Base implementation for tries. By default, removals are performed by putting
  * null, and trimToSize is a no-op.
  */
 abstract class AbstractTrie<T> implements Trie<T> {
+
+	static class EntryImpl<T> implements Entry<T> {
+
+		private final CharSequence key;
+		private final T value;
+
+		public EntryImpl(CharSequence key, T value) {
+			this.key = key;
+			this.value = value;
+		}
+
+		public static <T> Entry<T> newInstance(CharSequence key, T value) {
+			return new EntryImpl<T>(key, value);
+		}
+
+		@Override
+		public CharSequence getKey() {
+			return key;
+		}
+
+		@Override
+		public T getValue() {
+			return value;
+		}
+
+	}
 
 	protected void validate(int initialCapacity, float growthFactor) {
 		if (initialCapacity < 1) {

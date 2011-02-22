@@ -1,4 +1,4 @@
-package net.jpountz.trie;
+package net.jpountz.trie.util;
 import java.util.Arrays;
 
 public class FastCharMap<V> {
@@ -86,6 +86,10 @@ public class FastCharMap<V> {
 
 	public int size() {
 		return size;
+	}
+
+	public boolean isEmpty() {
+		return size == 0;
 	}
 
 	public static void main(String[] args) {

@@ -11,4 +11,10 @@ public class HashMapTrieTest extends AbstractTrieTest {
 	public void testCursor() {
 		// not supported
 	}
+
+	@Override
+	public void testGetSuffixes() {
+		// not supported
+	}
+
 }

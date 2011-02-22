@@ -4,7 +4,10 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+
+import net.jpountz.trie.Trie.Entry;
 
 public class PerfBenchmark {
 
@@ -49,12 +52,18 @@ public class PerfBenchmark {
 			Thread.sleep(3000);
 			Stats stats = pb.test(factory, n);
 			System.out.println(factory.newTrie().getClass().getSimpleName());
-			System.out.print(" - insert: ");
+			System.out.print(" - insert:    ");
 			System.out.println(stats.insert);
-			System.out.print(" - trim:   ");
+			System.out.print(" - trim:      ");
 			System.out.println(stats.trim);
-			System.out.print(" - lookup: ");
+			System.out.print(" - lookup:    ");
 			System.out.println(stats.lookup);
+			System.out.print(" - enumerate: ");
+			if (stats.enumerate >= 0) {
+				System.out.println(stats.enumerate);
+			} else {
+				System.out.println("unsupported");
+			}
 		}
 	}
 
@@ -88,10 +97,20 @@ public class PerfBenchmark {
 		return System.currentTimeMillis() - start;
 	}
 
+	public long testEnumerate(Trie<Boolean> trie) {
+		long start = System.currentTimeMillis();
+		Iterator<Entry<Boolean>> it = trie.getCursor().getSuffixes().iterator();
+		while (it.hasNext()) {
+			it.next();
+		}
+		return System.currentTimeMillis() - start;
+	}
+
 	private static class Stats {
 		public long insert = 0;
 		public long trim   = 0;
 		public long lookup = 0;
+		public long enumerate = 0;
 	}
 
 	public Stats test(TrieFactory<Boolean> factory, int n) {
@@ -100,15 +119,22 @@ public class PerfBenchmark {
 		testInsert(trie);
 		testTrimToSize(trie);
 		testLookup(trie);
+		testEnumerate(trie);
 		for (int i = 0; i < n; ++i) {
 			trie = factory.newTrie();
 			stats.insert += testInsert(trie);
 			stats.trim += testTrimToSize(trie);
 			stats.lookup += testLookup(trie);
+			try {
+				stats.enumerate += testEnumerate(trie);
+			} catch (UnsupportedOperationException e) {
+				stats.enumerate -= 1;
+			}
 		}
 		stats.insert /= n;
 		stats.trim /= n;
 		stats.lookup /= n;
+		stats.enumerate /= n;
 		return stats;
 	}
 
