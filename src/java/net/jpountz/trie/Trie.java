@@ -5,6 +5,8 @@ package net.jpountz.trie;
  */
 public interface Trie<T> {
 
+	Cursor<T> getCursor();
+
 	void put(char[] buffer, int offset, int length, T value);
 	void put(char[] buffer, T value);
 	void put(CharSequence sequence, int offset, int length, T value);
