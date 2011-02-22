@@ -1,63 +1,59 @@
 package net.jpountz.trie;
 
 import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
+import it.unimi.dsi.fastutil.chars.Char2ObjectSortedMap;
 import it.unimi.dsi.fastutil.chars.CharArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectSortedSet;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.Map;
 
-import net.jpountz.trie.util.FastCharMap;
 import net.jpountz.trie.util.PrefixedCharSequence;
 import net.jpountz.trie.util.Utils;
 
 /**
- * Trie based on a {@link FastCharMap}.
+ * Trie based on a {@link Char2ObjectSortedMap}.
+ *
+ * @param <T> the value type
  */
-public final class FastCharMapTrie<T> extends AbstractTrie<T> {
+public abstract class AbstractChar2ObjectSortedMapTrie<T> extends AbstractTrie<T> {
 
-	private static final class FastCharMapTrieNode<T> {
+	protected static class Char2ObjectSortedMapTrieNode<T> {
 
-		FastCharMap<FastCharMapTrieNode<T>> children;
+		Char2ObjectSortedMap<Char2ObjectSortedMapTrieNode<T>> children;
 		T value;
-
 		public int size() {
-			int size = 1;
-			if (children != null) {
-				char c = '\0';
-				while ((c = children.nextKey(c)) != '\0') {
-					FastCharMapTrieNode<T> child = children.get(c);
-					size += child.size();
-				}
+			int result = 1;
+			for (Char2ObjectSortedMapTrieNode<T> value: children.values()) {
+				result += value.size();
 			}
-			return size;
+			return result;
 		}
 	}
 
-	private static class FastCharMapTrieCursor<T> implements Cursor<T> {
+	protected static abstract class Char2ObjectSortedMapTrieCursor<T> implements Cursor<T> {
 
-		final FastCharMapTrie<T> trie;
-		FastCharMapTrieNode<T> current;
-		final Deque<FastCharMapTrieNode<T>> parents;
+		final AbstractChar2ObjectSortedMapTrie<T> trie;
+		Char2ObjectSortedMapTrieNode<T> current;
+		final Deque<Char2ObjectSortedMapTrieNode<T>> parents;
 
-		private FastCharMapTrieCursor(FastCharMapTrie<T> trie, FastCharMapTrieNode<T> current,
-				Deque<FastCharMapTrieNode<T>> parents) {
+		protected Char2ObjectSortedMapTrieCursor(AbstractChar2ObjectSortedMapTrie<T> trie, Char2ObjectSortedMapTrieNode<T> current,
+				Deque<Char2ObjectSortedMapTrieNode<T>> parents) {
 			this.trie = trie;
 			this.current = current;
 			this.parents = parents;
 		}
 
-		public FastCharMapTrieCursor(FastCharMapTrie<T> trie) {
-			this(trie, trie.root, new ArrayDeque<FastCharMapTrieNode<T>>());
-		}
+		protected abstract Char2ObjectSortedMap<Char2ObjectSortedMapTrieNode<T>> newMap();
 
 		@Override
 		public boolean moveToChild(char c) {
 			if (current.children != null) {
-				FastCharMapTrieNode<T> child = current.children.get(c);
+				Char2ObjectSortedMapTrieNode<T> child = current.children.get(c);
 				if (child == null) {
 					return false;
 				} else {
@@ -73,15 +69,15 @@ public final class FastCharMapTrie<T> extends AbstractTrie<T> {
 		@Override
 		public void addChild(char c) {
 			parents.push(current);
-			FastCharMapTrieNode<T> child;
+			Char2ObjectSortedMapTrieNode<T> child;
 			if (current.children == null) {
-				current.children = new FastCharMap<FastCharMapTrieNode<T>>();
-				child = new FastCharMapTrieNode<T>();
+				current.children = newMap();
+				child = new Char2ObjectSortedMapTrieNode<T>();
 				current.children.put(c, child);
 			} else {
 				child = current.children.get(c);
 				if (child == null) {
-					child = new FastCharMapTrieNode<T>();
+					child = new Char2ObjectSortedMapTrieNode<T>();
 					current.children.put(c, child);
 				}
 			}
@@ -96,10 +92,7 @@ public final class FastCharMapTrie<T> extends AbstractTrie<T> {
 		@Override
 		public void getChildrenLabels(CharArrayList children) {
 			if (current.children != null) {
-				char c = '\0';
-				while ((c = current.children.nextKey(c)) != '\0') {
-					children.add(c);
-				}
+				children.addAll(current.children.keySet());
 			}
 		}
 
@@ -111,10 +104,11 @@ public final class FastCharMapTrie<T> extends AbstractTrie<T> {
 		@Override
 		public void getChildren(Char2ObjectMap<Cursor<T>> children) {
 			if (current.children != null) {
-				char c = '\0';
-				while ((c = current.children.nextKey(c)) != '\0') {
-					FastCharMapTrieNode<T> child = current.children.get(c);
-					FastCharMapTrieCursor<T> cursor = this.clone();
+				ObjectSortedSet<java.util.Map.Entry<Character, Char2ObjectSortedMapTrieNode<T>>> entryset = current.children.entrySet();
+				for (Map.Entry<Character, Char2ObjectSortedMapTrieNode<T>> entry : entryset) {
+					char c = entry.getKey();
+					Char2ObjectSortedMapTrieNode<T> child = entry.getValue();
+					Char2ObjectSortedMapTrieCursor<T> cursor = this.clone();
 					cursor.current = child;
 					cursor.parents.push(current);
 					children.put(c, cursor);
@@ -124,10 +118,10 @@ public final class FastCharMapTrie<T> extends AbstractTrie<T> {
 
 		private static class SuffixIterable<T> implements Iterable<Entry<T>> {
 
-			private final FastCharMapTrieNode<T> root;
+			private final Char2ObjectSortedMapTrieNode<T> root;
 			private final CharSequence prefix;
 
-			public SuffixIterable(FastCharMapTrieNode<T> root, CharSequence prefix) {
+			public SuffixIterable(Char2ObjectSortedMapTrieNode<T> root, CharSequence prefix) {
 				this.root = root;
 				this.prefix = prefix;
 			}
@@ -151,9 +145,10 @@ public final class FastCharMapTrie<T> extends AbstractTrie<T> {
 						iterators.add(Collections.singleton(
 								EntryImpl.newInstance(prefix, root.value)).iterator());
 					}
-					char c = '\0';
-					while ((c = root.children.nextKey(c)) != '\0') {
-						FastCharMapTrieNode<T> node = root.children.get(c);
+					ObjectSortedSet<Map.Entry<Character, Char2ObjectSortedMapTrieNode<T>>> entryset = root.children.entrySet();
+					for (Map.Entry<Character, Char2ObjectSortedMapTrieNode<T>> entry : entryset) {
+						char c = entry.getKey();
+						Char2ObjectSortedMapTrieNode<T> node = entry.getValue();
 						iterators.add(new SuffixIterable<T>(node, new PrefixedCharSequence(prefix, c)).iterator());
 					}
 					return Utils.concat(iterators.iterator());
@@ -168,10 +163,7 @@ public final class FastCharMapTrie<T> extends AbstractTrie<T> {
 		}
 
 		@Override
-		public FastCharMapTrieCursor<T> clone() {
-			return new FastCharMapTrieCursor<T>(trie, current,
-					new ArrayDeque<FastCharMapTrieNode<T>>(parents));
-		}
+		public abstract Char2ObjectSortedMapTrieCursor<T> clone();
 
 		public boolean moveToParent() {
 			if (parents.isEmpty()) {
@@ -200,15 +192,10 @@ public final class FastCharMapTrie<T> extends AbstractTrie<T> {
 		}
 	}
 
-	private final FastCharMapTrieNode<T> root;
+	final Char2ObjectSortedMapTrieNode<T> root;
 
-	public FastCharMapTrie() {
-		root = new FastCharMapTrieNode<T>();
-	}
-
-	@Override
-	public Cursor<T> getCursor() {
-		return new FastCharMapTrieCursor<T>(this);
+	public AbstractChar2ObjectSortedMapTrie() {
+		this.root = new Char2ObjectSortedMapTrieNode<T>();
 	}
 
 	@Override

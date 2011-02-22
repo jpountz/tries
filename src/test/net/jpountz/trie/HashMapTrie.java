@@ -142,6 +142,11 @@ public class HashMapTrie<T> extends AbstractTrie<T> {
 		}
 
 		@Override
+		public int getChildrenSize() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
 		public void getChildren(Char2ObjectMap<Cursor<T>> children) {
 			throw new UnsupportedOperationException();
 		}

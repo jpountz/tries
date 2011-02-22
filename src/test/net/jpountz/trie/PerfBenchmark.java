@@ -31,6 +31,18 @@ public class PerfBenchmark {
 				return new FastCharMapTrie<Boolean>();
 			}
 		});
+		FACTORIES.add(new TrieFactory<Boolean>() {
+			@Override
+			public Trie<Boolean> newTrie() {
+				return new Char2ObjectAVLTreeMapTrie<Boolean>();
+			}
+		});
+		FACTORIES.add(new TrieFactory<Boolean>() {
+			@Override
+			public Trie<Boolean> newTrie() {
+				return new Char2ObjectRBTreeMapTrie<Boolean>();
+			}
+		});
 	}
 
 	public static void main(String[] args) throws IOException, InterruptedException {
@@ -119,7 +131,9 @@ public class PerfBenchmark {
 		testInsert(trie);
 		testTrimToSize(trie);
 		testLookup(trie);
-		testEnumerate(trie);
+		try {
+			testEnumerate(trie);
+		} catch (UnsupportedOperationException e) { /* ignore */ }
 		for (int i = 0; i < n; ++i) {
 			trie = factory.newTrie();
 			stats.insert += testInsert(trie);

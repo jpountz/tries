@@ -135,6 +135,11 @@ public final class SimpleTrie<T> extends AbstractTrie<T> {
 		}
 
 		@Override
+		public int getChildrenSize() {
+			return current.size;
+		}
+
+		@Override
 		public void getChildren(Char2ObjectMap<Cursor<T>> children) {
 			for (int i = 0; i < current.size; ++i) {
 				char c = current.labels[i];

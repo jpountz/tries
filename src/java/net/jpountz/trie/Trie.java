@@ -76,6 +76,13 @@ public interface Trie<T> {
 		void getChildrenLabels(CharArrayList children);
 
 		/**
+		 * Get the number of children.
+		 *
+		 * @return the number of children
+		 */
+		int getChildrenSize();
+
+		/**
 		 * Get the children of the current node.
 		 *
 		 * @param children a map to fill
@@ -83,7 +90,7 @@ public interface Trie<T> {
 		void getChildren(Char2ObjectMap<Cursor<T>> children);
 
 		/**
-		 * Get all the available suffixes.
+		 * Get all the available suffixes sorted lexicographically.
 		 *
 		 * @return the suffixes
 		 */
