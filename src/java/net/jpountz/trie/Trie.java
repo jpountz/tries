@@ -7,6 +7,8 @@ public interface Trie<T> {
 
 	Cursor<T> getCursor();
 
+	void clear();
+
 	void put(char[] buffer, int offset, int length, T value);
 	void put(char[] buffer, T value);
 	void put(CharSequence sequence, int offset, int length, T value);

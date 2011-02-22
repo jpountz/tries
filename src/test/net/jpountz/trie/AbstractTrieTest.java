@@ -1,5 +1,6 @@
 package net.jpountz.trie;
 
+import it.unimi.dsi.fastutil.chars.CharArrayList;
 import junit.framework.TestCase;
 
 
@@ -95,5 +96,19 @@ public abstract class AbstractTrieTest extends TestCase {
 		assertEquals(0, trie.get("a").intValue());
 		assertEquals(1, trie.get("ab").intValue());
 		assertEquals(2, trie.get("abcd").intValue());
+	}
+
+	public void testCursor() {
+		Cursor<Integer> cursor = trie.getCursor();
+		assertFalse(cursor.moveToParent());
+		CharArrayList children = new CharArrayList();
+		cursor.getChildren(children);
+		assertEquals(0, children.size());
+		cursor.addChild('a');
+		cursor.getChildren(children);
+		assertEquals(0, children.size());
+		assertTrue(cursor.moveToParent());
+		cursor.getChildren(children);
+		assertEquals(1, children.size());
 	}
 }

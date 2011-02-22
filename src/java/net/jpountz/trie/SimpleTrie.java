@@ -120,11 +120,10 @@ public class SimpleTrie<T> extends AbstractTrie<T> {
 
 		@Override
 		public boolean moveToParent() {
-			current = parents.pop();
-			if (current == null) {
-				current = trie.root;
+			if (parents.isEmpty()) {
 				return false;
 			} else {
+				current = parents.pop();
 				return true;
 			}
 		}
@@ -182,9 +181,20 @@ public class SimpleTrie<T> extends AbstractTrie<T> {
 		this(DEFAULT_CAPACITY, DEFAULT_GROWTH_FACTOR);
 	}
 
+	public void clear() {
+		root.children = null;
+		root.labels = null;
+		root.value = null;
+	}
+
 	@Override
 	public Cursor<T> getCursor() {
 		return new SimpleTrieCursor<T>(this);
+	}
+
+	@Override
+	public void trimToSize() {
+		root.trimToSize();
 	}
 
 }

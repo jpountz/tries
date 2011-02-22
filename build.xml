@@ -64,6 +64,18 @@
     </junit>
   </target>
 
+  <target name="test_perf" depends="compile-tests">
+    <input message="File:" addproperty="file" />
+    <java classname="net.jpountz.trie.PerfBenchmark" fork="true" maxmemory="250m">
+      <arg value="${file}" />
+      <classpath>
+        <fileset dir="${lib.dir}" includes="*.jar"/>
+        <pathelement location="${build.classes}" />
+        <pathelement location="${test.build.classes}"/>
+      </classpath>
+    </java> 
+  </target>
+
   <target name="dist" depends="compile">
    <mkdir dir="${dist.dir}" />
     <jar destfile="${dist.jar}"
