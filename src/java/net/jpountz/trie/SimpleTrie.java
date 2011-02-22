@@ -44,7 +44,7 @@ public class SimpleTrie<T> extends AbstractTrie<T> {
 
 		private final SimpleTrie<T> trie;
 		private SimpleTrieNode<T> current;
-		private Deque<SimpleTrieNode<T>> parents;
+		private final Deque<SimpleTrieNode<T>> parents;
 
 		private SimpleTrieCursor(SimpleTrie<T> trie, SimpleTrieNode<T> current,
 				Deque<SimpleTrieNode<T>> parents) {
