@@ -13,12 +13,24 @@ public class PerfBenchmark {
 		FACTORIES.add(new TrieFactory<Boolean>() {
 			@Override
 			public Trie<Boolean> newTrie() {
+				return new HashMapTrie<Boolean>();
+			}
+		});
+		FACTORIES.add(new TrieFactory<Boolean>() {
+			@Override
+			public Trie<Boolean> newTrie() {
 				return new SimpleTrie<Boolean>();
+			}
+		});
+		FACTORIES.add(new TrieFactory<Boolean>() {
+			@Override
+			public Trie<Boolean> newTrie() {
+				return new FastCharMapTrie<Boolean>();
 			}
 		});
 	}
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InterruptedException {
 		if (args.length == 0) {
 			throw new IllegalArgumentException("Missing argument: file");
 		}
@@ -33,6 +45,8 @@ public class PerfBenchmark {
 		PerfBenchmark pb = new PerfBenchmark(words);
 		int n = 20;
 		for (TrieFactory<Boolean> factory : FACTORIES) {
+			System.gc();
+			Thread.sleep(3000);
 			Stats stats = pb.test(factory, n);
 			System.out.println(factory.newTrie().getClass().getSimpleName());
 			System.out.print(" - insert: ");
@@ -67,7 +81,9 @@ public class PerfBenchmark {
 	public long testLookup(Trie<Boolean> trie) {
 		long start = System.currentTimeMillis();
 		for (int i = 0; i < words.length; ++i) {
-			trie.get(words[i]);
+			if (trie.get(words[i]) == null) {
+				throw new NullPointerException(trie.getClass().getSimpleName() + " " + new String(words[i]));
+			}
 		}
 		return System.currentTimeMillis() - start;
 	}
@@ -80,8 +96,12 @@ public class PerfBenchmark {
 
 	public Stats test(TrieFactory<Boolean> factory, int n) {
 		Stats stats = new Stats();
+		Trie<Boolean> trie = factory.newTrie();
+		testInsert(trie);
+		testTrimToSize(trie);
+		testLookup(trie);
 		for (int i = 0; i < n; ++i) {
-			Trie<Boolean> trie = factory.newTrie();
+			trie = factory.newTrie();
 			stats.insert += testInsert(trie);
 			stats.trim += testTrimToSize(trie);
 			stats.lookup += testLookup(trie);
