@@ -7,6 +7,61 @@ package net.jpountz.trie;
  */
 abstract class AbstractTrie<T> implements Trie<T> {
 
+	protected static abstract class AbstractCursor<T> implements Cursor<T> {
+
+		protected final StringBuilder label;
+
+		public AbstractCursor(StringBuilder label) {
+			this.label = label;
+		}
+
+		@Override
+		public final String getLabel() {
+			return label.toString();
+		}
+
+		@Override
+		public final char getEdgeLabel() {
+			if (label.length() == 0) {
+				return '\0';
+			} else {
+				return label.charAt(label.length()-1);
+			}
+		}
+
+		@Override
+		public boolean moveToNextSuffix(Node under) {
+			while (true) {
+				if (moveToFirstChild() || moveToBrother()) {
+					if (getValue() != null) {
+						return true;
+					}
+				} else {
+					if (getNode().equals(under)) {
+						return false;
+					}
+					while (true) {
+						 if (moveToParent()) {
+							if (getNode().equals(under)) {
+								return false;
+							} else {
+								if (moveToBrother()) {
+									if (getValue() != null) {
+										return true;
+									} else {
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		public abstract AbstractCursor<T> clone();
+	}
+
 	static class EntryImpl<T> implements Entry<T> {
 
 		private final CharSequence key;

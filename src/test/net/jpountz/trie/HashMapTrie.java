@@ -45,9 +45,9 @@ public class HashMapTrie<T> extends AbstractTrie<T> {
 			return length;
 		}
 
-		/*public char charAt(int offset) {
+		public char charAt(int offset) {
 			return buffer[offset];
-		}*/
+		}
 
 		public MutableString append(char c) {
 			if (length == buffer.length) {
@@ -94,6 +94,10 @@ public class HashMapTrie<T> extends AbstractTrie<T> {
 			return hashCode;
 		}
 
+		@Override
+		public String toString() {
+			return new String(buffer, 0, length);
+		}
 	}
 
 	private static class HashMapTrieCursor<T> implements Cursor<T> {
@@ -111,9 +115,34 @@ public class HashMapTrie<T> extends AbstractTrie<T> {
 		}
 
 		@Override
+		public Node getNode() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public String getLabel() {
+			return prefix.toString();
+		}
+
+		@Override
+		public char getEdgeLabel() {
+			return prefix.charAt(prefix.length - 1);
+		}
+
+		@Override
 		public boolean moveToChild(char c) {
 			prefix.append(c);
 			return true;
+		}
+
+		@Override
+		public boolean moveToFirstChild() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public boolean moveToBrother() {
+			throw new UnsupportedOperationException();
 		}
 
 		@Override
@@ -152,7 +181,7 @@ public class HashMapTrie<T> extends AbstractTrie<T> {
 		}
 
 		@Override
-		public Iterable<Entry<T>> getSuffixes() {
+		public boolean moveToNextSuffix(Node under) {
 			throw new UnsupportedOperationException();
 		}
 

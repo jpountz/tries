@@ -4,10 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-
-import net.jpountz.trie.Trie.Entry;
 
 public class PerfBenchmark {
 
@@ -29,18 +26,6 @@ public class PerfBenchmark {
 			@Override
 			public Trie<Boolean> newTrie() {
 				return new FastCharMapTrie<Boolean>();
-			}
-		});
-		FACTORIES.add(new TrieFactory<Boolean>() {
-			@Override
-			public Trie<Boolean> newTrie() {
-				return new Char2ObjectAVLTreeMapTrie<Boolean>();
-			}
-		});
-		FACTORIES.add(new TrieFactory<Boolean>() {
-			@Override
-			public Trie<Boolean> newTrie() {
-				return new Char2ObjectRBTreeMapTrie<Boolean>();
 			}
 		});
 	}
@@ -111,10 +96,9 @@ public class PerfBenchmark {
 
 	public long testEnumerate(Trie<Boolean> trie) {
 		long start = System.currentTimeMillis();
-		Iterator<Entry<Boolean>> it = trie.getCursor().getSuffixes().iterator();
-		while (it.hasNext()) {
-			it.next();
-		}
+		Trie.Cursor<Boolean> cursor = trie.getCursor();
+		Trie.Node under = cursor.getNode();
+		while (cursor.moveToNextSuffix(under)) {}
 		return System.currentTimeMillis() - start;
 	}
 

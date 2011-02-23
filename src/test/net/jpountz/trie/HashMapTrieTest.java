@@ -13,8 +13,7 @@ public class HashMapTrieTest extends AbstractTrieTest {
 	}
 
 	@Override
-	public void testGetSuffixes() {
+	public void testMoveToNextSuffix() {
 		// not supported
 	}
-
 }

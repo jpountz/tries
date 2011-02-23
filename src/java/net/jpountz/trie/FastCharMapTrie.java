@@ -4,22 +4,16 @@ import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
 import it.unimi.dsi.fastutil.chars.CharArrayList;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
-import java.util.Iterator;
 
 import net.jpountz.trie.util.FastCharMap;
-import net.jpountz.trie.util.PrefixedCharSequence;
-import net.jpountz.trie.util.Utils;
 
 /**
  * Trie based on a {@link FastCharMap}.
  */
 public final class FastCharMapTrie<T> extends AbstractTrie<T> {
 
-	private static final class FastCharMapTrieNode<T> {
+	private static final class FastCharMapTrieNode<T> implements Node {
 
 		FastCharMap<FastCharMapTrieNode<T>> children;
 		T value;
@@ -37,21 +31,27 @@ public final class FastCharMapTrie<T> extends AbstractTrie<T> {
 		}
 	}
 
-	private static class FastCharMapTrieCursor<T> implements Cursor<T> {
+	private static class FastCharMapTrieCursor<T> extends AbstractCursor<T> {
 
 		final FastCharMapTrie<T> trie;
 		FastCharMapTrieNode<T> current;
 		final Deque<FastCharMapTrieNode<T>> parents;
 
 		private FastCharMapTrieCursor(FastCharMapTrie<T> trie, FastCharMapTrieNode<T> current,
-				Deque<FastCharMapTrieNode<T>> parents) {
+				Deque<FastCharMapTrieNode<T>> parents, StringBuilder label) {
+			super(label);
 			this.trie = trie;
 			this.current = current;
 			this.parents = parents;
 		}
 
 		public FastCharMapTrieCursor(FastCharMapTrie<T> trie) {
-			this(trie, trie.root, new ArrayDeque<FastCharMapTrieNode<T>>());
+			this(trie, trie.root, new ArrayDeque<FastCharMapTrieNode<T>>(), new StringBuilder());
+		}
+
+		@Override
+		public Node getNode() {
+			return current;
 		}
 
 		@Override
@@ -63,6 +63,7 @@ public final class FastCharMapTrie<T> extends AbstractTrie<T> {
 				} else {
 					parents.push(current);
 					current = child;
+					label.append(c);
 					return true;
 				}
 			} else {
@@ -71,8 +72,45 @@ public final class FastCharMapTrie<T> extends AbstractTrie<T> {
 		}
 
 		@Override
+		public boolean moveToFirstChild() {
+			if (current.children != null) {
+				char c = current.children.nextKey('\0');
+				if (c != '\0') {
+					FastCharMapTrieNode<T> child = current.children.get(c);
+					parents.push(current);
+					current = child;
+					label.append(c);
+					return true;
+				}
+			}
+			return false;
+		}
+
+		@Override
+		public boolean moveToBrother() {
+			char c = getEdgeLabel();
+			if (moveToParent()) {
+				char next = current.children.nextKey(c);
+				final boolean result = next != '\0';
+				if (result) {
+					c = next;
+				}
+				FastCharMapTrieNode<T> child = current.children.get(c);
+				if (child == null) {
+					throw new IllegalStateException("A portion of the trie where the cursor was has been removed");
+				}
+				parents.push(current);
+				current = child;
+				label.append(c);
+				return result;
+			}
+			return false;
+		}
+
+		@Override
 		public void addChild(char c) {
 			parents.push(current);
+			label.append(c);
 			FastCharMapTrieNode<T> child;
 			if (current.children == null) {
 				current.children = new FastCharMap<FastCharMapTrieNode<T>>();
@@ -122,55 +160,11 @@ public final class FastCharMapTrie<T> extends AbstractTrie<T> {
 			}
 		}
 
-		private static class SuffixIterable<T> implements Iterable<Entry<T>> {
-
-			private final FastCharMapTrieNode<T> root;
-			private final CharSequence prefix;
-
-			public SuffixIterable(FastCharMapTrieNode<T> root, CharSequence prefix) {
-				this.root = root;
-				this.prefix = prefix;
-			}
-
-			@Override
-			public Iterator<Entry<T>> iterator() {
-				if (root.children == null || root.children.isEmpty()) {
-					if (root.value == null) {
-						return Collections.<Entry<T>>emptySet().iterator();
-					} else {
-						return Collections.singleton(
-								EntryImpl.newInstance(prefix, root.value)).iterator();
-					}
-				} else {
-					int size = root.children.size();
-					if (root.value != null) {
-						++size;
-					}
-					Collection<Iterator<Entry<T>>> iterators = new ArrayList<Iterator<Entry<T>>>(size);
-					if (root.value != null) {
-						iterators.add(Collections.singleton(
-								EntryImpl.newInstance(prefix, root.value)).iterator());
-					}
-					char c = '\0';
-					while ((c = root.children.nextKey(c)) != '\0') {
-						FastCharMapTrieNode<T> node = root.children.get(c);
-						iterators.add(new SuffixIterable<T>(node, new PrefixedCharSequence(prefix, c)).iterator());
-					}
-					return Utils.concat(iterators.iterator());
-				}
-			}
-
-		}
-
-		@Override
-		public Iterable<Entry<T>> getSuffixes() {
-			return new SuffixIterable<T>(current, "");
-		}
-
 		@Override
 		public FastCharMapTrieCursor<T> clone() {
 			return new FastCharMapTrieCursor<T>(trie, current,
-					new ArrayDeque<FastCharMapTrieNode<T>>(parents));
+					new ArrayDeque<FastCharMapTrieNode<T>>(parents),
+					new StringBuilder(label));
 		}
 
 		public boolean moveToParent() {
@@ -178,6 +172,7 @@ public final class FastCharMapTrie<T> extends AbstractTrie<T> {
 				return false;
 			} else {
 				current = parents.pop();
+				label.setLength(label.length() - 1);
 				return true;
 			}
 		}
@@ -197,6 +192,7 @@ public final class FastCharMapTrie<T> extends AbstractTrie<T> {
 		public void reset() {
 			current = trie.root;
 			parents.clear();
+			label.setLength(0);
 		}
 	}
 

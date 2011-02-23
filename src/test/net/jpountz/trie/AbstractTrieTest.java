@@ -1,11 +1,8 @@
 package net.jpountz.trie;
 
-import java.util.Iterator;
-
-import net.jpountz.trie.Trie.Cursor;
-import net.jpountz.trie.Trie.Entry;
 import it.unimi.dsi.fastutil.chars.CharArrayList;
 import junit.framework.TestCase;
+import net.jpountz.trie.Trie.Cursor;
 
 
 public abstract class AbstractTrieTest extends TestCase {
@@ -109,37 +106,44 @@ public abstract class AbstractTrieTest extends TestCase {
 		cursor.getChildrenLabels(children);
 		assertEquals(0, children.size());
 		cursor.addChild('a');
+		assertEquals('a', cursor.getEdgeLabel());
+		assertEquals("a", cursor.getLabel());
 		cursor.getChildrenLabels(children);
 		assertEquals(0, children.size());
 		assertTrue(cursor.moveToParent());
+		assertEquals('\0', cursor.getEdgeLabel());
+		assertEquals("", cursor.getLabel());
 		cursor.getChildrenLabels(children);
+		assertEquals(1, children.size());
+		cursor.moveToChild('a');
+		assertEquals('a', cursor.getEdgeLabel());
+		assertEquals("a", cursor.getLabel());
+		cursor.reset();
+		assertEquals('\0', cursor.getEdgeLabel());
+		assertEquals("", cursor.getLabel());
 		assertEquals(1, children.size());
 	}
 
-	public void testGetSuffixes() {
+	public void testMoveToNextSuffix() {
 		trie.put("ab", 1);
 		trie.put("abcd", 2);
 		trie.put("aed", 4);
+		trie.put("aedfg", 5);
 		trie.put("aef", 3);
 		trie.put("a", 0);
 		Cursor<Integer> cursor = trie.getCursor();
 		cursor.moveToChild('a');
-		Iterator<Entry<Integer>> suffixes = cursor.getSuffixes().iterator();
-		assertEquals(true, suffixes.hasNext());
-		Entry<Integer> next = suffixes.next();
-		assertEquals("", next.getKey().toString());
-		assertEquals(true, suffixes.hasNext());
-		next = suffixes.next();
-		assertEquals("b", next.getKey().toString());
-		assertEquals(true, suffixes.hasNext());
-		next = suffixes.next();
-		assertEquals("bcd", next.getKey().toString());
-		assertEquals(true, suffixes.hasNext());
-		next = suffixes.next();
-		assertEquals("ed", next.getKey().toString());
-		assertEquals(true, suffixes.hasNext());
-		next = suffixes.next();
-		assertEquals("ef", next.getKey().toString());
-		assertEquals(false, suffixes.hasNext());
+		Trie.Node under = cursor.getNode();
+		assertTrue(cursor.moveToNextSuffix(under));
+		assertEquals("ab", cursor.getLabel());
+		assertTrue(cursor.moveToNextSuffix(under));
+		assertEquals("abcd", cursor.getLabel());
+		assertTrue(cursor.moveToNextSuffix(under));
+		assertEquals("aed", cursor.getLabel());
+		assertTrue(cursor.moveToNextSuffix(under));
+		assertEquals("aedfg", cursor.getLabel());
+		assertTrue(cursor.moveToNextSuffix(under));
+		assertEquals("aef", cursor.getLabel());
+		assertFalse(cursor.moveToNextSuffix(under));
 	}
 }

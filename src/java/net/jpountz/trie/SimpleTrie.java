@@ -4,15 +4,8 @@ import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
 import it.unimi.dsi.fastutil.chars.CharArrayList;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
-import java.util.Iterator;
-
-import net.jpountz.trie.util.PrefixedCharSequence;
-import net.jpountz.trie.util.Utils;
 
 /**
  * Simple implementation where each node stores its children sorted
@@ -23,7 +16,7 @@ public final class SimpleTrie<T> extends AbstractTrie<T> {
 	private static final int DEFAULT_CAPACITY = 5;
 	private static final float DEFAULT_GROWTH_FACTOR = 2f;
 
-	private static class SimpleTrieNode<T> {
+	private static class SimpleTrieNode<T> implements Node {
 
 		SimpleTrieNode<T>[] children;
 		char[] labels;
@@ -49,21 +42,27 @@ public final class SimpleTrie<T> extends AbstractTrie<T> {
 		}
 	}
 
-	private static final class SimpleTrieCursor<T> implements Cursor<T> {
+	private static final class SimpleTrieCursor<T> extends AbstractCursor<T> {
 
 		protected final SimpleTrie<T> trie;
 		protected SimpleTrieNode<T> current;
 		protected final Deque<SimpleTrieNode<T>> parents;
 
 		private SimpleTrieCursor(SimpleTrie<T> trie, SimpleTrieNode<T> current,
-				Deque<SimpleTrieNode<T>> parents) {
+				Deque<SimpleTrieNode<T>> parents, StringBuilder label) {
+			super(label);
 			this.trie = trie;
 			this.current = current;
 			this.parents = parents;
 		}
 
 		public SimpleTrieCursor(SimpleTrie<T> trie) {
-			this(trie, trie.root, new ArrayDeque<SimpleTrieNode<T>>());
+			this(trie, trie.root, new ArrayDeque<SimpleTrieNode<T>>(), new StringBuilder());
+		}
+
+		@Override
+		public Node getNode() {
+			return current;
 		}
 
 		@Override
@@ -74,14 +73,50 @@ public final class SimpleTrie<T> extends AbstractTrie<T> {
 			} else {
 				parents.push(current);
 				current = current.children[idx];
+				label.append(c);
 				return true;
 			}
+		}
+
+		@Override
+		public boolean moveToFirstChild() {
+			if (current.size > 0) {
+				char c = current.labels[0];
+				parents.push(current);
+				current = current.children[0];
+				label.append(c);
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		@Override
+		public boolean moveToBrother() {
+			char c = getEdgeLabel();
+			if (moveToParent()) {
+				int idx = Arrays.binarySearch(current.labels, 0, current.size, c);
+				if (idx < 0) {
+					throw new IllegalStateException("A portion of the trie where the cursor was has been removed");
+				}
+				final boolean result = idx+1 < current.size;
+				if (result) {
+					++idx;
+				}
+				c = current.labels[idx];
+				parents.push(current);
+				current = current.children[idx];
+				label.append(c);
+				return result;
+			}
+			return false;
 		}
 
 		@SuppressWarnings("unchecked")
 		@Override
 		public void addChild(char c) {
 			parents.push(current);
+			label.append(c);
 			if (current.children == null || current.children.length == 0) {
 				current.children = new SimpleTrieNode[trie.initialCapacity];
 				current.labels = new char[trie.initialCapacity];
@@ -151,56 +186,12 @@ public final class SimpleTrie<T> extends AbstractTrie<T> {
 			}
 		}
 
-		private static class SuffixIterable<T> implements Iterable<Entry<T>> {
-
-			private final SimpleTrieNode<T> root;
-			private final CharSequence prefix;
-
-			public SuffixIterable(SimpleTrieNode<T> root, CharSequence prefix) {
-				this.root = root;
-				this.prefix = prefix;
-			}
-
-			@Override
-			public Iterator<Entry<T>> iterator() {
-				if (root.size == 0) {
-					if (root.value == null) {
-						return Collections.<Entry<T>>emptySet().iterator();
-					} else {
-						return Collections.singleton(
-								EntryImpl.newInstance(prefix, root.value)).iterator();
-					}
-				} else {
-					int size = root.size;
-					if (root.value != null) {
-						++size;
-					}
-					Collection<Iterator<Entry<T>>> iterators = new ArrayList<Iterator<Entry<T>>>(size);
-					if (root.value != null) {
-						iterators.add(Collections.singleton(
-								EntryImpl.newInstance(prefix, root.value)).iterator());
-					}
-					for (int i = 0; i < root.size; ++i) {
-						char c = root.labels[i];
-						SimpleTrieNode<T> node = root.children[i];
-						iterators.add(new SuffixIterable<T>(node, new PrefixedCharSequence(prefix, c)).iterator());
-					}
-					return Utils.concat(iterators.iterator());
-				}
-			}
-
-		}
-
-		@Override
-		public Iterable<Entry<T>> getSuffixes() {
-			return new SuffixIterable<T>(current, "");
-		}
-
 		public boolean moveToParent() {
 			if (parents.isEmpty()) {
 				return false;
 			} else {
 				current = parents.pop();
+				label.setLength(label.length() - 1);
 				return true;
 			}
 		}
@@ -220,11 +211,13 @@ public final class SimpleTrie<T> extends AbstractTrie<T> {
 		public void reset() {
 			current = trie.root;
 			parents.clear();
+			label.setLength(0);
 		}
 
 		public SimpleTrieCursor<T> clone() {
 			return new SimpleTrieCursor<T>(trie, current,
-					new ArrayDeque<SimpleTrieNode<T>>(parents));
+					new ArrayDeque<SimpleTrieNode<T>>(parents),
+					new StringBuilder(label));
 		}
 
 	}
