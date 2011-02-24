@@ -1,6 +1,10 @@
 package net.jpountz.trie;
 
 import it.unimi.dsi.fastutil.chars.CharArrayList;
+
+import java.util.SortedSet;
+import java.util.TreeSet;
+
 import junit.framework.TestCase;
 import net.jpountz.trie.Trie.Cursor;
 
@@ -124,6 +128,27 @@ public abstract class AbstractTrieTest extends TestCase {
 		assertEquals(1, children.size());
 	}
 
+	public void testCursor2() {
+		trie.put("abc", 2);
+		trie.put("accc", 3);
+		trie.put("acaa", 4);
+		Trie.Cursor<Integer> cursor = trie.getCursor();
+		assertFalse(cursor.moveToBrother());
+		assertTrue(cursor.moveToFirstChild());
+		assertEquals("a", cursor.getLabel());
+		assertFalse(cursor.moveToBrother());
+		assertTrue(cursor.moveToFirstChild());
+		assertEquals("ab", cursor.getLabel());
+		assertTrue(cursor.moveToBrother());
+		assertEquals("ac", cursor.getLabel());
+		assertFalse(cursor.moveToBrother());
+		assertTrue(cursor.moveToFirstChild());
+		assertTrue(cursor.moveToFirstChild());
+		assertEquals("acaa", cursor.getLabel());
+		assertFalse(cursor.moveToBrother());
+		assertNotNull(cursor.getValue());
+	}
+
 	public void testMoveToNextSuffix() {
 		trie.put("ab", 1);
 		trie.put("abcd", 2);
@@ -134,16 +159,48 @@ public abstract class AbstractTrieTest extends TestCase {
 		Cursor<Integer> cursor = trie.getCursor();
 		cursor.moveToChild('a');
 		Trie.Node under = cursor.getNode();
-		assertTrue(cursor.moveToNextSuffix(under));
+		assertTrue(Tries.moveToNextSuffix(under, cursor));
 		assertEquals("ab", cursor.getLabel());
-		assertTrue(cursor.moveToNextSuffix(under));
+		assertTrue(Tries.moveToNextSuffix(under, cursor));
 		assertEquals("abcd", cursor.getLabel());
-		assertTrue(cursor.moveToNextSuffix(under));
+		assertTrue(Tries.moveToNextSuffix(under, cursor));
 		assertEquals("aed", cursor.getLabel());
-		assertTrue(cursor.moveToNextSuffix(under));
+		assertTrue(Tries.moveToNextSuffix(under, cursor));
 		assertEquals("aedfg", cursor.getLabel());
-		assertTrue(cursor.moveToNextSuffix(under));
+		assertTrue(Tries.moveToNextSuffix(under, cursor));
 		assertEquals("aef", cursor.getLabel());
-		assertFalse(cursor.moveToNextSuffix(under));
+		assertFalse(Tries.moveToNextSuffix(under, cursor));
+	}
+
+	public void testMoveToNextNode() {
+		trie.put("aef", 3);
+		trie.put("ab", 1);
+		trie.put("abcd", 2);
+		trie.put("aedfg", 4);
+		trie.put("aed", 5);
+		trie.put("a", 0);
+		int n = 0;
+		Cursor<Integer> cursor = trie.getCursor();
+		Trie.Node root = cursor.getNode();
+		String[] labels = new String[] {
+				"a", "ab", "abc", "abcd", "ae", "aed", "aedf", "aedfg", "aef"
+		};
+		while (Tries.moveToNextNode(root, cursor)) {
+			assertEquals(labels[n++], cursor.getLabel());
+		}
+		++n; // for the root node
+		assertEquals(n, trie.size());
+	}
+
+	public void testGetNeightbors() {
+		trie.put("aabc", 1);
+		trie.put("acd", 2);
+		trie.put("zabc", 3);
+		trie.put("abcde", 4);
+		trie.put("abcdefg", 10);
+		
+		SortedSet<Trie.Entry<Integer>> neighbors = new TreeSet<Trie.Entry<Integer>>();
+		Tries.getNeighbors("abc", trie, 2, neighbors);
+		assertEquals(4, neighbors.size());
 	}
 }

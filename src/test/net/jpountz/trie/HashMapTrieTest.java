@@ -13,7 +13,22 @@ public class HashMapTrieTest extends AbstractTrieTest {
 	}
 
 	@Override
+	public void testCursor2() {
+		// not supported
+	}
+
+	@Override
 	public void testMoveToNextSuffix() {
+		// not supported
+	}
+
+	@Override
+	public void testMoveToNextNode() {
+		// not supported
+	}
+
+	@Override
+	public void testGetNeightbors() {
 		// not supported
 	}
 }

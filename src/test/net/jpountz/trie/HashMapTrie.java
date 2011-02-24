@@ -1,7 +1,6 @@
 package net.jpountz.trie;
 
-import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
-import it.unimi.dsi.fastutil.chars.CharArrayList;
+import it.unimi.dsi.fastutil.chars.CharCollection;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -120,8 +119,18 @@ public class HashMapTrie<T> extends AbstractTrie<T> {
 		}
 
 		@Override
+		public boolean isAt(Node node) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
 		public String getLabel() {
 			return prefix.toString();
+		}
+
+		@Override
+		public int depth() {
+			return prefix.length;
 		}
 
 		@Override
@@ -151,7 +160,7 @@ public class HashMapTrie<T> extends AbstractTrie<T> {
 		}
 
 		@Override
-		public void removeChild(char c) {
+		public boolean removeChild(char c) {
 			throw new UnsupportedOperationException();
 		}
 
@@ -166,22 +175,12 @@ public class HashMapTrie<T> extends AbstractTrie<T> {
 		}
 
 		@Override
-		public void getChildrenLabels(CharArrayList children) {
+		public void getChildrenLabels(CharCollection children) {
 			throw new UnsupportedOperationException();
 		}
 
 		@Override
 		public int getChildrenSize() {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public void getChildren(Char2ObjectMap<Cursor<T>> children) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public boolean moveToNextSuffix(Node under) {
 			throw new UnsupportedOperationException();
 		}
 

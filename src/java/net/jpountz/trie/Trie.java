@@ -1,7 +1,6 @@
 package net.jpountz.trie;
 
-import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
-import it.unimi.dsi.fastutil.chars.CharArrayList;
+import it.unimi.dsi.fastutil.chars.CharCollection;
 
 /**
  * A trie. http://en.wikipedia.org/wiki/Trie
@@ -42,7 +41,7 @@ public interface Trie<T> {
 	 *
 	 * @param <T> the values type
 	 */
-	public interface Cursor<T> {
+	public interface Cursor<T> extends Cloneable {
 
 		/**
 		 * Get the node corresponding to the position of the cursor.
@@ -50,6 +49,21 @@ public interface Trie<T> {
 		 * @return
 		 */
 		Node getNode();
+
+		/**
+		 * Get whether the cursor is at node.
+		 *
+		 * @param node the node to test
+		 * @return true if, and only if the cursor is at node
+		 */
+		boolean isAt(Node node);
+
+		/**
+		 * Get the depth corresponding to the position of the cursor.
+		 *
+		 * @return the depth
+		 */
+		int depth();
 
 		/**
 		 * Get the label corresponding to the cursor position.
@@ -100,7 +114,7 @@ public interface Trie<T> {
 		 *
 		 * @param c the child label
 		 */
-		void removeChild(char c);
+		boolean removeChild(char c);
 
 		/**
 		 * Move to the parent node.
@@ -114,7 +128,7 @@ public interface Trie<T> {
 		 *
 		 * @param children
 		 */
-		void getChildrenLabels(CharArrayList children);
+		void getChildrenLabels(CharCollection children);
 
 		/**
 		 * Get the number of children.
@@ -122,21 +136,6 @@ public interface Trie<T> {
 		 * @return the number of children
 		 */
 		int getChildrenSize();
-
-		/**
-		 * Get the children of the current node.
-		 *
-		 * @param children a map to fill
-		 */
-		void getChildren(Char2ObjectMap<Cursor<T>> children);
-
-		/**
-		 * Go to the next suffix under 'under'.
-		 *
-		 * @param under
-		 * @return true if a suffix has been found
-		 */
-		boolean moveToNextSuffix(Node under);
 
 		/**
 		 * Get the value of the node.

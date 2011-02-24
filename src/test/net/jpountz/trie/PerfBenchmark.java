@@ -1,47 +1,17 @@
 package net.jpountz.trie;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-public class PerfBenchmark {
-
-	private static final List<TrieFactory<Boolean>> FACTORIES = new ArrayList<TrieFactory<Boolean>>();
-	static {
-		FACTORIES.add(new TrieFactory<Boolean>() {
-			@Override
-			public Trie<Boolean> newTrie() {
-				return new HashMapTrie<Boolean>();
-			}
-		});
-		FACTORIES.add(new TrieFactory<Boolean>() {
-			@Override
-			public Trie<Boolean> newTrie() {
-				return new SimpleTrie<Boolean>();
-			}
-		});
-		FACTORIES.add(new TrieFactory<Boolean>() {
-			@Override
-			public Trie<Boolean> newTrie() {
-				return new FastCharMapTrie<Boolean>();
-			}
-		});
-	}
+public class PerfBenchmark extends Benchmark {
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		if (args.length == 0) {
 			throw new IllegalArgumentException("Missing argument: file");
 		}
-		BufferedReader reader = new BufferedReader(new FileReader(args[0]));
-		List<char[]> words = new ArrayList<char[]>();
-		String line;
-		while ((line = reader.readLine()) != null) {
-			char[] buffer = new char[line.length()];
-			line.getChars(0, line.length(), buffer, 0);
-			words.add(buffer);
-		}
+		List<char[]> words = readWords(args[0]);
 		PerfBenchmark pb = new PerfBenchmark(words);
 		int n = 20;
 		for (TrieFactory<Boolean> factory : FACTORIES) {
@@ -58,6 +28,12 @@ public class PerfBenchmark {
 			System.out.print(" - enumerate: ");
 			if (stats.enumerate >= 0) {
 				System.out.println(stats.enumerate);
+			} else {
+				System.out.println("unsupported");
+			}
+			System.out.print(" - neighbors: ");
+			if (stats.neighbors >= 0) {
+				System.out.println(stats.neighbors);
 			} else {
 				System.out.println("unsupported");
 			}
@@ -98,7 +74,20 @@ public class PerfBenchmark {
 		long start = System.currentTimeMillis();
 		Trie.Cursor<Boolean> cursor = trie.getCursor();
 		Trie.Node under = cursor.getNode();
-		while (cursor.moveToNextSuffix(under)) {}
+		while (Tries.moveToNextSuffix(under, cursor)) {}
+		return System.currentTimeMillis() - start;
+	}
+
+	public long testNeighbors(Trie<Boolean> trie) {
+		long start = System.currentTimeMillis();
+		Set<Trie.Entry<Boolean>> neighbors = new HashSet<Trie.Entry<Boolean>>();
+		for (int i = 0; i < words.length; i+=10) {
+			neighbors.clear();
+			Tries.getNeighbors(words[i], trie, 1, neighbors);
+			if (neighbors.isEmpty()) {
+				throw new Error("Badly implemented: no neighbor: " + new String(words[i]));
+			}
+		}
 		return System.currentTimeMillis() - start;
 	}
 
@@ -107,6 +96,7 @@ public class PerfBenchmark {
 		public long trim   = 0;
 		public long lookup = 0;
 		public long enumerate = 0;
+		public long neighbors = 0;
 	}
 
 	public Stats test(TrieFactory<Boolean> factory, int n) {
@@ -118,6 +108,9 @@ public class PerfBenchmark {
 		try {
 			testEnumerate(trie);
 		} catch (UnsupportedOperationException e) { /* ignore */ }
+		try {
+			testNeighbors(trie);
+		} catch (UnsupportedOperationException e) { /* ignore */ }
 		for (int i = 0; i < n; ++i) {
 			trie = factory.newTrie();
 			stats.insert += testInsert(trie);
@@ -128,11 +121,17 @@ public class PerfBenchmark {
 			} catch (UnsupportedOperationException e) {
 				stats.enumerate -= 1;
 			}
+			try {
+				stats.neighbors += testNeighbors(trie);
+			} catch (UnsupportedOperationException e) {
+				stats.neighbors -= 1;
+			}
 		}
 		stats.insert /= n;
 		stats.trim /= n;
 		stats.lookup /= n;
 		stats.enumerate /= n;
+		stats.neighbors /= n;
 		return stats;
 	}
 

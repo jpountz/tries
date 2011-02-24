@@ -1,7 +1,6 @@
 package net.jpountz.trie;
 
-import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
-import it.unimi.dsi.fastutil.chars.CharArrayList;
+import it.unimi.dsi.fastutil.chars.CharCollection;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -11,13 +10,17 @@ import net.jpountz.trie.util.FastCharMap;
 /**
  * Trie based on a {@link FastCharMap}.
  */
-public final class FastCharMapTrie<T> extends AbstractTrie<T> {
+public final class FastCharMapTrie<T> extends AbstractNodeTrie<T> {
 
-	private static final class FastCharMapTrieNode<T> implements Node {
+	private static final class FastCharMapTrieNode<T> extends AbstractNodeTrieNode<T> {
 
 		FastCharMap<FastCharMapTrieNode<T>> children;
-		T value;
 
+		public FastCharMapTrieNode(char label) {
+			super(label);
+		}
+
+		@Override
 		public int size() {
 			int size = 1;
 			if (children != null) {
@@ -29,177 +32,112 @@ public final class FastCharMapTrie<T> extends AbstractTrie<T> {
 			}
 			return size;
 		}
+
+		@Override
+		protected AbstractNodeTrieNode<T> getFirstChild() {
+			if (children != null) {
+				char c = children.nextKey('\0');
+				if (c != '\0') {
+					FastCharMapTrieNode<T> child = children.get(c);
+					return child;
+				}
+			}
+			return null;
+		}
+
+		@Override
+		protected AbstractNodeTrieNode<T> getChild(char c) {
+			if (children != null) {
+				return children.get(c);
+			}
+			return null;
+		}
+
+		@Override
+		protected AbstractNodeTrieNode<T> addChild(char c) {
+			if (children != null) {
+				FastCharMapTrieNode<T> child = children.get(c);
+				if (child != null) {
+					return child;
+				}
+			} else {
+				children = new FastCharMap<FastCharMapTrieNode<T>>();
+			}
+			FastCharMapTrieNode<T> child = new FastCharMapTrieNode<T>(c);
+			children.put(c, child);
+			char prevKey = children.prevKey(c);
+			if (prevKey != '\0') {
+				children.get(prevKey).brother = child;
+			}
+			char nextKey = children.nextKey(c);
+			if (nextKey != '\0') {
+				child.brother = children.get(nextKey);
+			}
+			return child;
+		}
+
+		@Override
+		protected boolean removeChild(char c) {
+			if (children.remove(c)) {
+				char prevKey = children.prevKey(c);
+				if (prevKey != '\0') {
+					char nextKey = children.nextKey(c);
+					if (nextKey != '\0') {
+						 children.get(prevKey).brother = children.get(nextKey);
+					} else {
+						children.get(prevKey).brother = null;
+					}
+				}
+			}
+			return false;
+		}
+
+		@Override
+		protected void getChildrenLabels(CharCollection childrenCollection) {
+			if (children != null) {
+				char c = '\0';
+				while ((c = children.nextKey(c)) != '\0') {
+					childrenCollection.add(c);
+				}
+			}
+		}
+
+		@Override
+		protected int childrenSize() {
+			return children.size();
+		}
 	}
 
-	private static class FastCharMapTrieCursor<T> extends AbstractCursor<T> {
+	private static class FastCharMapTrieCursor<T> extends AbstractNodeTrieCursor<T> {
 
-		final FastCharMapTrie<T> trie;
-		FastCharMapTrieNode<T> current;
-		final Deque<FastCharMapTrieNode<T>> parents;
-
-		private FastCharMapTrieCursor(FastCharMapTrie<T> trie, FastCharMapTrieNode<T> current,
-				Deque<FastCharMapTrieNode<T>> parents, StringBuilder label) {
-			super(label);
-			this.trie = trie;
-			this.current = current;
-			this.parents = parents;
+		private FastCharMapTrieCursor(FastCharMapTrie<T> trie,
+				FastCharMapTrieNode<T> current,
+				Deque<AbstractNodeTrieNode<T>> parents, StringBuilder label) {
+			super(trie, current, parents, label);
 		}
 
 		public FastCharMapTrieCursor(FastCharMapTrie<T> trie) {
-			this(trie, trie.root, new ArrayDeque<FastCharMapTrieNode<T>>(), new StringBuilder());
+			this(trie, trie.root, new ArrayDeque<AbstractNodeTrieNode<T>>(),
+					new StringBuilder());
 		}
 
-		@Override
-		public Node getNode() {
-			return current;
-		}
-
-		@Override
-		public boolean moveToChild(char c) {
-			if (current.children != null) {
-				FastCharMapTrieNode<T> child = current.children.get(c);
-				if (child == null) {
-					return false;
-				} else {
-					parents.push(current);
-					current = child;
-					label.append(c);
-					return true;
-				}
-			} else {
-				return false;
-			}
-		}
-
-		@Override
-		public boolean moveToFirstChild() {
-			if (current.children != null) {
-				char c = current.children.nextKey('\0');
-				if (c != '\0') {
-					FastCharMapTrieNode<T> child = current.children.get(c);
-					parents.push(current);
-					current = child;
-					label.append(c);
-					return true;
-				}
-			}
-			return false;
-		}
-
-		@Override
-		public boolean moveToBrother() {
-			char c = getEdgeLabel();
-			if (moveToParent()) {
-				char next = current.children.nextKey(c);
-				final boolean result = next != '\0';
-				if (result) {
-					c = next;
-				}
-				FastCharMapTrieNode<T> child = current.children.get(c);
-				if (child == null) {
-					throw new IllegalStateException("A portion of the trie where the cursor was has been removed");
-				}
-				parents.push(current);
-				current = child;
-				label.append(c);
-				return result;
-			}
-			return false;
-		}
-
-		@Override
-		public void addChild(char c) {
-			parents.push(current);
-			label.append(c);
-			FastCharMapTrieNode<T> child;
-			if (current.children == null) {
-				current.children = new FastCharMap<FastCharMapTrieNode<T>>();
-				child = new FastCharMapTrieNode<T>();
-				current.children.put(c, child);
-			} else {
-				child = current.children.get(c);
-				if (child == null) {
-					child = new FastCharMapTrieNode<T>();
-					current.children.put(c, child);
-				}
-			}
-			current = child;
-		}
-
-		@Override
-		public void removeChild(char c) {
-			current.children.remove(c);
-		}
-
-		@Override
-		public void getChildrenLabels(CharArrayList children) {
-			if (current.children != null) {
-				char c = '\0';
-				while ((c = current.children.nextKey(c)) != '\0') {
-					children.add(c);
-				}
-			}
-		}
-
-		@Override
-		public int getChildrenSize() {
-			return current.children.size();
-		}
-
-		@Override
-		public void getChildren(Char2ObjectMap<Cursor<T>> children) {
-			if (current.children != null) {
-				char c = '\0';
-				while ((c = current.children.nextKey(c)) != '\0') {
-					FastCharMapTrieNode<T> child = current.children.get(c);
-					FastCharMapTrieCursor<T> cursor = this.clone();
-					cursor.current = child;
-					cursor.parents.push(current);
-					children.put(c, cursor);
-				}
-			}
-		}
-
-		@Override
 		public FastCharMapTrieCursor<T> clone() {
-			return new FastCharMapTrieCursor<T>(trie, current,
-					new ArrayDeque<FastCharMapTrieNode<T>>(parents),
+			return new FastCharMapTrieCursor<T>((FastCharMapTrie<T>) trie,
+					(FastCharMapTrieNode<T>) current,
+					new ArrayDeque<AbstractNodeTrieNode<T>>(parents),
 					new StringBuilder(label));
-		}
-
-		public boolean moveToParent() {
-			if (parents.isEmpty()) {
-				return false;
-			} else {
-				current = parents.pop();
-				label.setLength(label.length() - 1);
-				return true;
-			}
-		}
-
-		public T getValue() {
-			return current.value;
-		}
-
-		public void setValue(T value) {
-			current.value = value;
-		}
-
-		public int size() {
-			return current.size();
-		}
-
-		public void reset() {
-			current = trie.root;
-			parents.clear();
-			label.setLength(0);
 		}
 	}
 
 	private final FastCharMapTrieNode<T> root;
 
 	public FastCharMapTrie() {
-		root = new FastCharMapTrieNode<T>();
+		root = new FastCharMapTrieNode<T>('\0');
+	}
+
+	@Override
+	protected AbstractNodeTrieNode<T> getRoot() {
+		return root;
 	}
 
 	@Override

@@ -66,7 +66,13 @@
 
   <target name="test_perf" depends="compile-tests">
     <input message="File:" addproperty="file" />
-    <java classname="net.jpountz.trie.PerfBenchmark" fork="true" maxmemory="250m">
+    <java classname="net.jpountz.trie.PerfBenchmark" fork="true">
+      <jvmarg value="-Xms250m" />
+      <jvmarg value="-Xmx250m" />
+      <jvmarg value="-server" />
+      <jvmarg value="-XX:+AggressiveOpts" />
+      <jvmarg value="-XX:+UseFastAccessorMethods" />
+      <jvmarg value="-XX:CompileThreshold=10" />
       <arg value="${file}" />
       <classpath>
         <fileset dir="${lib.dir}" includes="*.jar"/>
@@ -74,6 +80,21 @@
         <pathelement location="${test.build.classes}"/>
       </classpath>
     </java> 
+  </target>
+
+  <target name="test_mem" depends="compile-tests">
+    <input message="File:" addproperty="file" />
+    <java classname="net.jpountz.trie.MemoryBenchmark" fork="true">
+      <jvmarg value="-Xms250m" />
+      <jvmarg value="-Xmx250m" />
+      <jvmarg value="-server" />
+      <arg value="${file}" />
+      <classpath>
+        <fileset dir="${lib.dir}" includes="*.jar"/>
+        <pathelement location="${build.classes}" />
+        <pathelement location="${test.build.classes}"/>
+      </classpath>
+    </java>
   </target>
 
   <target name="dist" depends="compile">

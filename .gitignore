@@ -4,3 +4,4 @@ dist
 lib
 .project
 .classpath
+test_inputs

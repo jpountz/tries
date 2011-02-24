@@ -21,6 +21,11 @@ abstract class AbstractTrie<T> implements Trie<T> {
 		}
 
 		@Override
+		public final int depth() {
+			return label.length();
+		}
+
+		@Override
 		public final char getEdgeLabel() {
 			if (label.length() == 0) {
 				return '\0';
@@ -30,39 +35,14 @@ abstract class AbstractTrie<T> implements Trie<T> {
 		}
 
 		@Override
-		public boolean moveToNextSuffix(Node under) {
-			while (true) {
-				if (moveToFirstChild() || moveToBrother()) {
-					if (getValue() != null) {
-						return true;
-					}
-				} else {
-					if (getNode().equals(under)) {
-						return false;
-					}
-					while (true) {
-						 if (moveToParent()) {
-							if (getNode().equals(under)) {
-								return false;
-							} else {
-								if (moveToBrother()) {
-									if (getValue() != null) {
-										return true;
-									} else {
-										break;
-									}
-								}
-							}
-						}
-					}
-				}
-			}
+		public boolean isAt(Node under) {
+			return getNode().equals(under);
 		}
 
 		public abstract AbstractCursor<T> clone();
 	}
 
-	static class EntryImpl<T> implements Entry<T> {
+	static class EntryImpl<T> implements Entry<T>, Comparable<Entry<T>> {
 
 		private final CharSequence key;
 		private final T value;
@@ -84,6 +64,56 @@ abstract class AbstractTrie<T> implements Trie<T> {
 		@Override
 		public T getValue() {
 			return value;
+		}
+
+		@Override
+		public int compareTo(Entry<T> other) {
+			CharSequence otherKey = other.getKey();
+			int max = Math.max(key.length(), otherKey.length());
+			int result = 0;
+			for (int i = 0; i < max; ++i) {
+				result = key.charAt(i) - otherKey.charAt(i);
+				if (result != 0) {
+					return result;
+				}
+			}
+			return otherKey.length() - key.length();
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((key == null) ? 0 : key.hashCode());
+			result = prime * result + ((value == null) ? 0 : value.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			EntryImpl<?> other = (EntryImpl<?>) obj;
+			if (key == null) {
+				if (other.key != null)
+					return false;
+			} else if (!key.equals(other.key))
+				return false;
+			if (value == null) {
+				if (other.value != null)
+					return false;
+			} else if (!value.equals(other.value))
+				return false;
+			return true;
+		}
+
+		@Override
+		public String toString() {
+			return new StringBuilder(key).append(" --> ").append(value).toString();
 		}
 
 	}

@@ -22,9 +22,14 @@ public class FastCharMap<V> {
 		return null;
 	}
 
-	public void remove(char c) {
+	public boolean remove(char c) {
 		if (c > min && c < min + values.length - 1) {
-			values[c-min] = null;
+			boolean result = values[c-min] != null;
+			if (result) {
+				--size;
+				values[c-min] = null;
+			}
+			return result;
 		} else if (c == min) {
 			char newMin = nextKey(c);
 			if (newMin == '\0') {
@@ -33,6 +38,8 @@ public class FastCharMap<V> {
 				values = Arrays.copyOfRange(values, newMin - min, values.length);
 			}
 			min = newMin;
+			--size;
+			return true;
 		} else if (min + values.length - c == 1) {
 			int newLength;
 			for (newLength = values.length - 1; newLength > 0; --newLength) {
@@ -41,6 +48,10 @@ public class FastCharMap<V> {
 				}
 			}
 			values = Arrays.copyOf(values, newLength);
+			--size;
+			return true;
+		} else {
+			return false;
 		}
 	}
 
@@ -71,13 +82,43 @@ public class FastCharMap<V> {
 		}
 	}
 
-	public char nextKey(char c) {
-		if (c < min) {
-			return min;
+	public char firstKey() {
+		return min;
+	}
+
+	public char lastKey() {
+		if (values == null) {
+			return '\0';
 		} else {
-			for (int i = c  - min + 1; i < values.length; ++i) {
-				if (values[i] != null) {
-					return (char) (i+min);
+			return (char) (min +values.length - 1);
+		}
+	}
+
+	public char nextKey(char c) {
+		if (values != null) {
+			if (c < min) {
+				return min;
+			} else {
+				for (int i = c  - min + 1; i < values.length; ++i) {
+					if (values[i] != null) {
+						return (char) (i+min);
+					}
+				}
+			}
+		}
+		return '\0';
+	}
+
+	public char prevKey(char c) {
+		if (values != null) {
+			final char last = (char) (min + values.length - 1);
+			if (c > last) {
+				return last;
+			} else {
+				for (int i = c - min - 1; i >= 0; --i) {
+					if (values[i] != null) {
+						return (char) (i+min);
+					}
 				}
 			}
 		}
