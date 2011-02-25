@@ -1,6 +1,7 @@
 package net.jpountz.trie;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -14,7 +15,7 @@ public class PerfBenchmark extends Benchmark {
 		List<char[]> words = readWords(args[0]);
 		PerfBenchmark pb = new PerfBenchmark(words);
 		int n = 20;
-		for (TrieFactory<Boolean> factory : FACTORIES) {
+		for (TrieFactory factory : FACTORIES) {
 			System.gc();
 			Thread.sleep(3000);
 			Stats stats = pb.test(factory, n);
@@ -40,16 +41,19 @@ public class PerfBenchmark extends Benchmark {
 		}
 	}
 
-	private final char[][] words;
+	private final char[][] wordsToWrite;
+	private final char[][] wordsToRead;
 
 	public PerfBenchmark(List<char[]> words) {
-		this.words = words.toArray(new char[words.size()][]);
+		this.wordsToWrite = words.toArray(new char[words.size()][]);
+		Collections.shuffle(words);
+		this.wordsToRead = words.toArray(new char[words.size()][]);
 	}
 
 	public long testInsert(Trie<Boolean> trie) {
 		long start = System.currentTimeMillis();
-		for (int i = 0; i < words.length; ++i) {
-			trie.put(words[i], Boolean.TRUE);
+		for (int i = 0; i < wordsToWrite.length; ++i) {
+			trie.put(wordsToWrite[i], Boolean.TRUE);
 		}
 		return System.currentTimeMillis() - start;
 	}
@@ -62,9 +66,9 @@ public class PerfBenchmark extends Benchmark {
 
 	public long testLookup(Trie<Boolean> trie) {
 		long start = System.currentTimeMillis();
-		for (int i = 0; i < words.length; ++i) {
-			if (trie.get(words[i]) == null) {
-				throw new NullPointerException(trie.getClass().getSimpleName() + " " + new String(words[i]));
+		for (int i = 0; i < wordsToRead.length; ++i) {
+			if (trie.get(wordsToRead[i]) == null) {
+				throw new NullPointerException(trie.getClass().getSimpleName() + " " + new String(wordsToRead[i]));
 			}
 		}
 		return System.currentTimeMillis() - start;
@@ -81,11 +85,11 @@ public class PerfBenchmark extends Benchmark {
 	public long testNeighbors(Trie<Boolean> trie) {
 		long start = System.currentTimeMillis();
 		Set<Trie.Entry<Boolean>> neighbors = new HashSet<Trie.Entry<Boolean>>();
-		for (int i = 0; i < words.length; i+=10) {
+		for (int i = 0; i < wordsToRead.length; i+=100) {
 			neighbors.clear();
-			Tries.getNeighbors(words[i], trie, 1, neighbors);
+			Tries.getNeighbors(wordsToRead[i], trie, 1, neighbors);
 			if (neighbors.isEmpty()) {
-				throw new Error("Badly implemented: no neighbor: " + new String(words[i]));
+				throw new Error("Badly implemented: no neighbor: " + new String(wordsToRead[i]));
 			}
 		}
 		return System.currentTimeMillis() - start;
@@ -99,7 +103,7 @@ public class PerfBenchmark extends Benchmark {
 		public long neighbors = 0;
 	}
 
-	public Stats test(TrieFactory<Boolean> factory, int n) {
+	public Stats test(TrieFactory factory, int n) {
 		Stats stats = new Stats();
 		Trie<Boolean> trie = factory.newTrie();
 		testInsert(trie);

@@ -8,30 +8,47 @@ import java.util.List;
 
 public class Benchmark {
 
-	protected static final List<TrieFactory<Boolean>> FACTORIES = new ArrayList<TrieFactory<Boolean>>();
+	protected static final List<TrieFactory> FACTORIES = new ArrayList<TrieFactory>();
 	static {
-		FACTORIES.add(new TrieFactory<Boolean>() {
+		FACTORIES.add(new TrieFactory() {
 			@Override
-			public Trie<Boolean> newTrie() {
-				return new HashMapTrie<Boolean>();
+			public <T> Trie<T> newTrie() {
+				return new HashMapTrie<T>();
 			}
 		});
-		FACTORIES.add(new TrieFactory<Boolean>() {
+		FACTORIES.add(new TrieFactory() {
 			@Override
-			public Trie<Boolean> newTrie() {
-				return new SimpleTrie<Boolean>();
+			public <T> Trie<T> newTrie() {
+				return new SimpleTrie<T>();
 			}
 		});
-		FACTORIES.add(new TrieFactory<Boolean>() {
+		FACTORIES.add(new TrieFactory() {
 			@Override
-			public Trie<Boolean> newTrie() {
-				return new FastCharMapTrie<Boolean>();
+			public <T> Trie<T> newTrie() {
+				return new FastCharMapTrie<T>();
 			}
 		});
-		FACTORIES.add(new TrieFactory<Boolean>() {
+		FACTORIES.add(new TrieFactory() {
 			@Override
-			public Trie<Boolean> newTrie() {
-				return new ArrayTrie<Boolean>();
+			public <T> Trie<T> newTrie() {
+				return new ArrayTrie<T>();
+			}
+		});
+		FACTORIES.add(new TrieFactory() {
+			@Override
+			public <V> Trie<V> newTrie() {
+				return new CompositeTrie<V>(new TrieFactory() {
+					@Override
+					public <V2> Trie<V2> newTrie() {
+						return new FastCharMapTrie<V2>();
+					}
+				},
+				new TrieFactory() {			
+					@Override
+					public <V2> Trie<V2> newTrie() {
+						return new ArrayTrie<V2>();
+					}
+				}, 2);
 			}
 		});
 	}

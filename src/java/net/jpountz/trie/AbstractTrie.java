@@ -35,6 +35,11 @@ abstract class AbstractTrie<T> implements Trie<T> {
 		}
 
 		@Override
+		public boolean isAtRoot() {
+			return depth() == 0;
+		}
+
+		@Override
 		public boolean isAt(Node under) {
 			return getNode().equals(under);
 		}

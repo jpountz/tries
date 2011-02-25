@@ -119,6 +119,11 @@ public class HashMapTrie<T> extends AbstractTrie<T> {
 		}
 
 		@Override
+		public boolean isAtRoot() {
+			return prefix.length == 0;
+		}
+
+		@Override
 		public boolean isAt(Node node) {
 			throw new UnsupportedOperationException();
 		}

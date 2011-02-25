@@ -72,7 +72,7 @@
       <jvmarg value="-server" />
       <jvmarg value="-XX:+AggressiveOpts" />
       <jvmarg value="-XX:+UseFastAccessorMethods" />
-      <jvmarg value="-XX:CompileThreshold=10" />
+      <jvmarg value="-XX:CompileThreshold=1" />
       <arg value="${file}" />
       <classpath>
         <fileset dir="${lib.dir}" includes="*.jar"/>

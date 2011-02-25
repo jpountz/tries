@@ -10,7 +10,7 @@ import java.util.Deque;
  * Simple implementation where each node stores its children sorted
  * lexicographically.
  */
-public final class SimpleTrie<T> extends AbstractNodeTrie<T> {
+public class SimpleTrie<T> extends AbstractNodeTrie<T> {
 
 	private static final int DEFAULT_CAPACITY = 5;
 	private static final float DEFAULT_GROWTH_FACTOR = 2f;

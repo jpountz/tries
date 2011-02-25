@@ -51,6 +51,13 @@ public interface Trie<T> {
 		Node getNode();
 
 		/**
+		 * Get whether the cursor is at root.
+		 *
+		 * @return true if, and only if the cursor is at root
+		 */
+		boolean isAtRoot();
+
+		/**
 		 * Get whether the cursor is at node.
 		 *
 		 * @param node the node to test

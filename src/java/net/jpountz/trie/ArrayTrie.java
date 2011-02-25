@@ -41,7 +41,7 @@ public class ArrayTrie<T> extends AbstractTrie<T> {
 
 		final ArrayTrie<T> trie;
 		int current;
-		IntArrayList parents;
+		final IntArrayList parents;
 
 		protected ArrayTrieCursor(ArrayTrie<T> trie, int current,
 				IntArrayList parents, StringBuilder label) {
@@ -140,6 +140,11 @@ public class ArrayTrie<T> extends AbstractTrie<T> {
 				label.setLength(label.length() - 1);
 				return true;
 			}
+		}
+
+		@Override
+		public boolean isAtRoot() {
+			return current == START;
 		}
 
 		@Override

@@ -134,7 +134,7 @@ public abstract class AbstractNodeTrie<T> extends AbstractTrie<T> {
 		public abstract AbstractNodeTrieCursor<T> clone();
 	}
 
-	protected abstract AbstractNodeTrieNode<T> getRoot();
+	abstract AbstractNodeTrieNode<T> getRoot();
 
 	@Override
 	public int size() {

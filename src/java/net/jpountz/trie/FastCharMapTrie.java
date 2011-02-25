@@ -10,9 +10,9 @@ import net.jpountz.trie.util.FastCharMap;
 /**
  * Trie based on a {@link FastCharMap}.
  */
-public final class FastCharMapTrie<T> extends AbstractNodeTrie<T> {
+public class FastCharMapTrie<T> extends AbstractNodeTrie<T> {
 
-	private static final class FastCharMapTrieNode<T> extends AbstractNodeTrieNode<T> {
+	static final class FastCharMapTrieNode<T> extends AbstractNodeTrieNode<T> {
 
 		FastCharMap<FastCharMapTrieNode<T>> children;
 
