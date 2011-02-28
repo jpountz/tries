@@ -1,5 +1,6 @@
 package net.jpountz.trie;
 
+import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
 import it.unimi.dsi.fastutil.chars.CharCollection;
 
 import java.util.Arrays;
@@ -10,7 +11,7 @@ import java.util.HashMap;
  */
 public class HashMapTrie<T> extends AbstractTrie<T> {
 
-	private static class MutableString {
+	private static class MutableString implements CharSequence {
 		private static final int DEFAULT_CAPACITY = 40;
 		private static final float growthFactor = 2;
 
@@ -97,9 +98,14 @@ public class HashMapTrie<T> extends AbstractTrie<T> {
 		public String toString() {
 			return new String(buffer, 0, length);
 		}
+
+		@Override
+		public CharSequence subSequence(int start, int end) {
+			return new MutableString(buffer, start, end-start);
+		}
 	}
 
-	private static class HashMapTrieCursor<T> implements Cursor<T> {
+	private static class HashMapTrieCursor<T> extends AbstractCursor<T> {
 
 		private final HashMapTrie<T> trie;
 		private final MutableString prefix;
@@ -114,7 +120,27 @@ public class HashMapTrie<T> extends AbstractTrie<T> {
 		}
 
 		@Override
+		protected CharSequence getLabelInternal() {
+			return prefix;
+		}
+
+		@Override
 		public Node getNode() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public Node getFirstChildNode() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public Node getBrotherNode() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void getChildren(Char2ObjectMap<Node> children) {
 			throw new UnsupportedOperationException();
 		}
 

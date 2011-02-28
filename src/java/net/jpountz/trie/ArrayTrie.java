@@ -3,12 +3,19 @@ package net.jpountz.trie;
 import it.unimi.dsi.fastutil.chars.CharCollection;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 
+import net.jpountz.trie.Trie.Optimizable;
+import net.jpountz.trie.util.IOUtils;
+import net.jpountz.trie.util.Serializer;
+
 /**
- * Trie implementation based on 3 backing arrays.
+ * Trie implementation based on backing arrays.
  */
-public class ArrayTrie<T> extends AbstractTrie<T> {
+abstract class ArrayTrie<T> extends AbstractTrie<T> implements Optimizable {
 
 	private static class ArrayTrieNode implements Node {
 
@@ -37,22 +44,42 @@ public class ArrayTrie<T> extends AbstractTrie<T> {
 
 	}
 
-	private static final class ArrayTrieCursor<T> extends AbstractCursor<T> {
+	static final class ArrayTrieCursor<T> extends AbstractCursor<T> {
 
+		private StringBuilder label;
 		final ArrayTrie<T> trie;
 		int current;
 		final IntArrayList parents;
 
 		protected ArrayTrieCursor(ArrayTrie<T> trie, int current,
 				IntArrayList parents, StringBuilder label) {
-			super(label);
+			this.label = label;
 			this.trie = trie;
 			this.current = current;
 			this.parents = parents;
 		}
 
+		@Override
+		protected CharSequence getLabelInternal() {
+			return label;
+		}
+
 		public ArrayTrieCursor(ArrayTrie<T> trie) {
 			this(trie, START, new IntArrayList(), new StringBuilder());
+		}
+
+		@Override
+		public Node getBrotherNode() {
+			int brother = trie.brother(current);
+			if (brother == NOT_FOUND) {
+				return null;
+			} else {
+				return new ArrayTrieNode(brother);
+			}
+		}
+
+		public int getNodeId() {
+			return current;
 		}
 
 		@Override
@@ -62,7 +89,11 @@ public class ArrayTrie<T> extends AbstractTrie<T> {
 
 		@Override
 		public boolean moveToChild(char c) {
-			int child = trie.getChildNode(current, c);
+			int child = trie.child(current, c);
+			if (child == 0) {
+				System.out.println("error");
+				trie.child(current, c);
+			}
 			if (child == NOT_FOUND) {
 				return false;
 			} else {
@@ -75,25 +106,28 @@ public class ArrayTrie<T> extends AbstractTrie<T> {
 
 		@Override
 		public boolean moveToFirstChild() {
-			int child = trie.children[current];
+			int child = trie.child(current);
+			if (child == 0) {
+				System.out.println("error");
+			}
 			if (child == NOT_FOUND) {
 				return false;
 			} else {
 				parents.push(current);
 				current = child;
-				label.append(trie.labels[current]);
+				label.append(trie.label(current));
 				return true;
 			}
 		}
 
 		@Override
 		public boolean moveToBrother() {
-			int brother = trie.brothers[current];
+			int brother = trie.brother(current);
 			if (brother == NOT_FOUND) {
 				return false;
 			} else {
 				current = brother;
-				label.setCharAt(label.length() - 1, trie.labels[current]);
+				label.setCharAt(label.length() - 1, trie.label(current));
 				return true;
 			}
 		}
@@ -102,7 +136,10 @@ public class ArrayTrie<T> extends AbstractTrie<T> {
 		public void addChild(char c) {
 			parents.push(current);
 			label.append(c);
-			current = trie.addChildNode(current, c);
+			current = trie.addChild(current, c);
+			if (current == 0) {
+				System.out.println("error");
+			}
 		}
 
 		@Override
@@ -113,20 +150,20 @@ public class ArrayTrie<T> extends AbstractTrie<T> {
 
 		@Override
 		public void getChildrenLabels(CharCollection children) {
-			int node = trie.children[current];
+			int node = trie.child(current);
 			while (node != NOT_FOUND) {
-				children.add(trie.labels[node]);
-				node = trie.brothers[node];
+				children.add(trie.label(node));
+				node = trie.brother(node);
 			}
 		}
 
 		@Override
 		public int getChildrenSize() {
 			int size = 0;
-			int node = trie.children[current];
+			int node = trie.child(current);
 			while (node != NOT_FOUND) {
 				++size;
-				node = trie.brothers[node];
+				node = trie.brother(node);
 			}
 			return size;
 		}
@@ -168,10 +205,10 @@ public class ArrayTrie<T> extends AbstractTrie<T> {
 				return 0;
 			} else {
 				int result = 1;
-				int node = trie.children[current];
+				int node = trie.child(current);
 				while (node != NOT_FOUND) {
 					result += sizeUnder(node);
-					node = trie.brothers[node];
+					node = trie.brother(node);
 				}
 				return result;
 			}
@@ -197,51 +234,98 @@ public class ArrayTrie<T> extends AbstractTrie<T> {
 		}
 	}
 
-	private static final int START = 0;
-	private static final int NOT_FOUND = -1;
+	protected static final int START = 0;
+	protected static final int NOT_FOUND = -1;
 
-	private static final int DEFAULT_CAPACITY = 255;
-	private static final float DEFAULT_GROWTH_FACTOR = 2f;
+	protected static final int DEFAULT_CAPACITY = 255;
+	protected static final float DEFAULT_GROWTH_FACTOR = 2f;
 
-	private final float growthFactor;
-	private int capacity;
-	private int size;
-
-	private int[] children;
-	private int[] brothers;
-	private char[] labels;
-	private Object[] values;
+	protected final float growthFactor;
+	protected int size;
+	protected Object[] values;
+	protected int[] brothers;
+	protected char[] labels;
 
 	public ArrayTrie(int initialCapacity, float growthFactor) {
+		this(initialCapacity, growthFactor, 1, new Object[initialCapacity],
+				new int[initialCapacity], new char[initialCapacity]);
 		validate(initialCapacity, growthFactor);
-		this.capacity = initialCapacity;
-		this.growthFactor = growthFactor;
-		size = 1;
-		children = new int[capacity];
-		Arrays.fill(children, NOT_FOUND);
-		brothers = new int[capacity];
 		Arrays.fill(brothers, NOT_FOUND);
-		labels = new char[capacity];
-		values = new Object[capacity];
 	}
 
-	public ArrayTrie() {
-		this(DEFAULT_CAPACITY, DEFAULT_GROWTH_FACTOR);
+	protected ArrayTrie(int initialCapacity, float growthFactor, int size,
+			Object[] values, int[] brothers, char[] labels) {
+		validate(initialCapacity, growthFactor);
+		this.growthFactor = growthFactor;
+		this.size = size;
+		this.values = values;
+		this.brothers = brothers;
+		this.labels = labels;
+	}
+
+	protected int getCapacity() {
+		return values.length;
+	}
+
+	protected abstract int child(int position);
+
+	protected int child(int node, char label) {
+		int child = child(node);
+		while (child != NOT_FOUND) {
+			if (label(child) == label) {
+				return child;
+			} else if (label(child) > label) {
+				break;
+			} else {
+				child = brother(child);
+			}
+		}
+		return NOT_FOUND;
+	}
+
+	protected abstract int addChild(int node, char c);
+
+	protected int brother(int position) {
+		return brothers[position];
+	}
+
+	protected void setBrother(int position, int brother) {
+		brothers[position] = brother;
+	}
+
+	protected char label(int position) {
+		return labels[position];
+	}
+
+	protected void setLabel(int position, char label) {
+		labels[position] = label;
 	}
 
 	public void ensureCapacity(int capacity) {
-		if (capacity > this.capacity) {
-			children = Arrays.copyOf(children, capacity);
-			Arrays.fill(children, this.capacity, capacity, NOT_FOUND);
+		int previousCapacity = getCapacity();
+		if (capacity > previousCapacity) {
 			brothers = Arrays.copyOf(brothers, capacity);
-			Arrays.fill(brothers, this.capacity, capacity, NOT_FOUND);
+			Arrays.fill(brothers, previousCapacity, capacity, NOT_FOUND);
 			labels = Arrays.copyOf(labels, capacity);
 			values = Arrays.copyOf(values, capacity);
-			this.capacity = capacity;
 		}
 	}
 
-	private int newNode() {
+	@Override
+	public void trimToSize() {
+		brothers = Arrays.copyOf(brothers, size);
+		labels = Arrays.copyOf(labels, size);
+		values = Arrays.copyOf(values, size);
+	}
+
+	@Override
+	public void clear() {
+		Arrays.fill(brothers, NOT_FOUND);
+		Arrays.fill(values, null);
+	}
+
+	protected int newNode() {
+		int capacity = getCapacity();
 		if (size >= capacity) {
 			ensureCapacity((int) Math.ceil(growthFactor * capacity));
 		}
@@ -249,78 +333,8 @@ public class ArrayTrie<T> extends AbstractTrie<T> {
 	}
 
 	@Override
-	public Cursor<T> getCursor() {
+	public ArrayTrieCursor<T> getCursor() {
 		return new ArrayTrieCursor<T>(this);
-	}
-
-	@Override
-	public void trimToSize() {
-		children = Arrays.copyOf(children, size);
-		brothers = Arrays.copyOf(brothers, size);
-		labels = Arrays.copyOf(labels, size);
-		values = Arrays.copyOf(values, size);
-		capacity = size;
-	}
-
-	public int getChildNode(int node, char label) {
-		int child = children[node];
-		while (child != NOT_FOUND) {
-			if (labels[child] == label) {
-				return child;
-			} else if (labels[child] > label) {
-				break;
-			} else {
-				child = brothers[child];
-			}
-		}
-		return NOT_FOUND;
-	}
-
-	private int addChildNode(int node, char c) {
-		int firstChild = children[node];
-		if (firstChild == NOT_FOUND) {
-			firstChild = newNode();
-			labels[firstChild] = c;
-			children[node] = firstChild;
-			node = firstChild;
-		} else {
-			char firstChildLabel = labels[firstChild];
-			if (firstChildLabel == c) {
-				node = firstChild;
-			} else if (firstChildLabel > c) {
-				int newFirstChild = newNode();
-				labels[newFirstChild] = c;
-				children[node] = newFirstChild;
-				brothers[newFirstChild] = firstChild;
-				node = newFirstChild;
-			} else {
-				int brother = firstChild;
-				while (true) {
-					int followingBrother = brothers[brother];
-					if (followingBrother == NOT_FOUND) {
-						followingBrother = newNode();
-						labels[followingBrother] = c;
-						brothers[brother] = followingBrother;
-						node = followingBrother;
-						break;
-					}
-					char followingBrotherLabel = labels[followingBrother];
-					if (followingBrotherLabel == c) {
-						node = followingBrother;
-						break;
-					} else if (followingBrotherLabel > c) {
-						int newBrother = newNode();
-						labels[newBrother] = c;
-						brothers[brother] = newBrother;
-						brothers[newBrother] = followingBrother;
-						node = newBrother;
-						break;
-					}
-					brother = followingBrother;
-				}
-			}
-		}
-		return node;
 	}
 
 	@Override
@@ -328,7 +342,7 @@ public class ArrayTrie<T> extends AbstractTrie<T> {
 		int node = START;
 		for (int i = 0; i < length; ++i) {
 			char c = buffer[offset+i];
-			node = addChildNode(node, c);
+			node = addChild(node, c);
 		}
 		values[node] = value;
 	}
@@ -338,7 +352,7 @@ public class ArrayTrie<T> extends AbstractTrie<T> {
 		int node = START;
 		for (int i = 0; i < length; ++i) {
 			char c = sequence.charAt(offset+i);
-			node = addChildNode(node, c);
+			node = addChild(node, c);
 		}
 		values[node] = value;
 	}
@@ -347,7 +361,7 @@ public class ArrayTrie<T> extends AbstractTrie<T> {
 		int node = START;
 		for (int i = 0; i < length; ++i) {
 			char c = buffer[offset+i];
-			node = getChildNode(node, c);
+			node = child(node, c);
 			if (node == NOT_FOUND) {
 				break;
 			}
@@ -359,7 +373,7 @@ public class ArrayTrie<T> extends AbstractTrie<T> {
 		int node = START;
 		for (int i = 0; i < length; ++i) {
 			char c = sequence.charAt(offset+i);
-			node = getChildNode(node, c);
+			node = child(node, c);
 			if (node == NOT_FOUND) {
 				break;
 			}
@@ -391,11 +405,61 @@ public class ArrayTrie<T> extends AbstractTrie<T> {
 		return size;
 	}
 
+	private void serialize(final int nodeId, DataOutputStream os,
+			Serializer<T> serializer, int[] offsets) throws IOException {
+		IOUtils.writeVInt(os, labels[nodeId]);
+		int size = 0;
+		int child = child(nodeId);
+		while (child != NOT_FOUND) {
+			++size;
+			child = brother(child);
+		}
+		IOUtils.writeVInt(os, size);
+		child = child(nodeId);
+		char previousLabel = '\0';
+		while (child != NOT_FOUND) {
+			IOUtils.writeVInt(os, label(child) - previousLabel);
+			IOUtils.writeInt(os, offsets[child]);
+			previousLabel = label(child);
+			child = brother(child);
+		}
+		int brother = brother(nodeId);
+		if (brother == NOT_FOUND) {
+			IOUtils.writeInt(os, 0);
+		} else {
+			IOUtils.writeInt(os, offsets[brother]);
+		}
+		serializer.write(getValue(nodeId), os);
+	}
+
 	@Override
-	public void clear() {
-		Arrays.fill(children, -1);
-		Arrays.fill(brothers, -1);
-		Arrays.fill(values, null);
+	void serialize(DataOutputStream output, Serializer<T> serializer,
+			TrieTraversal traversal) throws IOException {
+		int[] sizes = new int[size()];
+		int[] offsets = new int[size()];
+		ArrayTrieCursor<T> cursor = getCursor();
+		Node root = cursor.getNode();
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		DataOutputStream os = new DataOutputStream(bos);
+		serialize(0, os, serializer, offsets);
+		sizes[START] = bos.size();
+		while (traversal.moveToNextNode(root, cursor)) {
+			int nodeId = cursor.getNodeId();
+			bos.reset();
+			serialize(nodeId, os, serializer, offsets);
+			sizes[nodeId] = bos.size();
+		}
+		int offset = 0;
+		int size = sizes[START];
+		while (traversal.moveToNextNode(root, cursor)) {
+			int nodeId = cursor.getNodeId();
+			offset += size;
+			offsets[nodeId] = offset;
+			size = sizes[nodeId];
+		}
+		do {
+			serialize(cursor.getNodeId(), output, serializer, offsets);
+		} while (traversal.moveToNextNode(root, cursor));
 	}
 
 }

@@ -27,21 +27,32 @@ public abstract class AbstractNodeTrie<T> extends AbstractTrie<T> {
 
 	protected static abstract class AbstractNodeTrieCursor<T> extends AbstractCursor<T> {
 
+		private final StringBuilder label;
 		protected final AbstractNodeTrie<T> trie;
 		protected AbstractNodeTrieNode<T> current;
 		protected final Deque<AbstractNodeTrieNode<T>> parents;
 
 		protected AbstractNodeTrieCursor(AbstractNodeTrie<T> trie, AbstractNodeTrieNode<T> current,
 				Deque<AbstractNodeTrieNode<T>> parents, StringBuilder label) {
-			super(label);
+			this.label = label;
 			this.trie = trie;
 			this.current = current;
 			this.parents = parents;
 		}
 
 		@Override
+		protected CharSequence getLabelInternal() {
+			return label;
+		}
+
+		@Override
 		public final Node getNode() {
 			return current;
+		}
+
+		@Override
+		public Node getBrotherNode() {
+			return current.brother;
 		}
 
 		@Override

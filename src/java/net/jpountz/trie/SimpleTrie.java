@@ -161,7 +161,7 @@ public class SimpleTrie<T> extends AbstractNodeTrie<T> {
 			return new SimpleTrieCursor<T>((SimpleTrie<T>) trie,
 					(SimpleTrieNode<T>) current,
 					new ArrayDeque<AbstractNodeTrieNode<T>>(parents),
-					new StringBuilder(label));
+					new StringBuilder(getLabelInternal()));
 		}
 
 	}

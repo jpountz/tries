@@ -1,9 +1,9 @@
 package net.jpountz.trie;
 
+import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
 import it.unimi.dsi.fastutil.chars.CharCollection;
-import net.jpountz.trie.AbstractNodeTrie.AbstractNodeTrieNode;
 
-public class CompositeTrie<T> extends AbstractTrie<T> {
+public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizable {
 
 	static class CompositeNode implements Node {
 		final Node rootNode;
@@ -39,23 +39,27 @@ public class CompositeTrie<T> extends AbstractTrie<T> {
 		}
 	}
 
-	static class CompositeCursor<T> implements Cursor<T> {
+	static class CompositeCursor<T> extends AbstractCursor<T> {
 
 		private final CompositeTrie<T> trie;
-		//private final Cursor<Trie<T>> subTriesCursor;
 		private final Cursor<Object> rootCursor;
 		private Cursor<T> childCursor;
 
-		private CompositeCursor(CompositeTrie<T> trie, //Cursor<Trie<T>> subTriesCursor,
+		private CompositeCursor(CompositeTrie<T> trie,
 				Cursor<Object> rootCursor, Cursor<T> childCursor) {
 			this.trie = trie;
-			//this.subTriesCursor = subTriesCursor;
 			this.rootCursor = rootCursor;
 			this.childCursor = childCursor;
 		}
 
 		public CompositeCursor(CompositeTrie<T> trie) {
-			this(trie, /*trie.subTries.getCursor(),*/ trie.backend.getCursor(), null);
+			this(trie, trie.backend.getCursor(), null);
+		}
+
+		@Override
+		protected CharSequence getLabelInternal() {
+			// useless for this implementation
+			return this.getLabel();
 		}
 
 		@Override
@@ -70,11 +74,40 @@ public class CompositeTrie<T> extends AbstractTrie<T> {
 		}
 
 		@Override
+		public Node getFirstChildNode() {
+			if (moveToFirstChild()) {
+				Node result = getNode();
+				moveToParent();
+				return result;
+			}
+			return null;
+		}
+
+		@Override
+		public Node getBrotherNode() {
+			if (childCursor.isAtRoot() || childCursor.isAtRoot()) {
+				return new CompositeNode(rootCursor.getBrotherNode(), null);
+			} else {
+				return new CompositeNode(rootCursor.getNode(), childCursor.getNode());
+			}
+		}
+
+		@Override
 		public Node getNode() {
 			return new CompositeNode(rootCursor.getNode(),
 					childCursor == null || childCursor.isAtRoot()
 						? null
 						: childCursor.getNode());
+		}
+
+		@Override
+		public void getChildren(Char2ObjectMap<Node> children) {
+			if (moveToFirstChild()) {
+				do {
+					children.put(getEdgeLabel(), getNode());
+				} while (moveToBrother());
+				moveToParent();
+			}
 		}
 
 		@Override
@@ -212,7 +245,7 @@ public class CompositeTrie<T> extends AbstractTrie<T> {
 					@SuppressWarnings("unchecked")
 					Trie<T> subTrie = (Trie<T>) rootCursor.getValue();
 					if (subTrie == null) {
-						subTrie = trie.childFactory.<T>newTrie();
+						subTrie = trie.childFactory.newTrie();
 						rootCursor.setValue(subTrie);
 					}
 					childCursor = subTrie.getCursor();
@@ -321,7 +354,11 @@ public class CompositeTrie<T> extends AbstractTrie<T> {
 				return childCursor.getValue();
 			} else if (depth() == trie.rootDepth) {
 				Trie<T> subTrie = (Trie<T>) rootCursor.getValue();
-				return subTrie.get("");
+				if (subTrie != null) {
+					return subTrie.get("");
+				} else {
+					return null;
+				}
 			} else {
 				return (T) rootCursor.getValue();
 			}
@@ -375,7 +412,7 @@ public class CompositeTrie<T> extends AbstractTrie<T> {
 			} else {
 				Node node = rootCursor.getNode();
 				int size = 1;
-				while (Tries.moveToNextNode(node, rootCursor)) {
+				while (TrieTraversal.DEPTH_FIRST.moveToNextNode(node, rootCursor)) {
 					if (depth() == trie.rootDepth) {
 						@SuppressWarnings("unchecked")
 						Trie<T> subTrie = (Trie<T>) rootCursor.getValue();
@@ -390,22 +427,20 @@ public class CompositeTrie<T> extends AbstractTrie<T> {
 
 	}
 
-	private final TrieFactory childFactory;
-	//private final AbstractNodeTrie<T> root;
-	//private final AbstractNodeTrie<Trie<T>> subTries;
-	private final AbstractNodeTrie<Object> backend;
+	private final TrieFactory<T> childFactory;
+	private final Trie<Object> backend;
 	private final int rootDepth;
+	private final boolean subTriesAreOptimizable;
 
-	public CompositeTrie(TrieFactory parentFactory,
-			TrieFactory childFactory, int rootDepth) {
+	public CompositeTrie(TrieFactory<Object> parentFactory,
+			TrieFactory<T> childFactory, int rootDepth) {
 		if (rootDepth <= 0) {
 			throw new IllegalArgumentException("rootDepth must be > 0");
 		}
 		this.rootDepth = rootDepth;
-		//root = (AbstractNodeTrie<T>) parentFactory.<T>newTrie();
-		//subTries = (AbstractNodeTrie<Trie<T>>) parentFactory.<Trie<T>>newTrie();
-		backend = (AbstractNodeTrie<Object>) parentFactory.newTrie();
+		backend = parentFactory.newTrie();
 		this.childFactory = childFactory;
+		subTriesAreOptimizable = this.childFactory.newTrie() instanceof Optimizable;
 	}
 
 	@Override
@@ -468,7 +503,18 @@ public class CompositeTrie<T> extends AbstractTrie<T> {
 
 	@Override
 	public void put(char[] buffer, int offset, int length, T value) {
-		int l = Math.min(rootDepth, length);
+		if (length < rootDepth) {
+			backend.put(buffer, offset, length, value);
+		} else {
+			@SuppressWarnings("unchecked")
+			Trie<T> sub = (Trie<T>) backend.get(buffer, offset, rootDepth);
+			if (sub == null) {
+				sub = childFactory.newTrie();
+				backend.put(buffer, offset, rootDepth, sub);
+			}
+			sub.put(buffer, offset + rootDepth, length - rootDepth, value);
+		}
+		/*int l = Math.min(rootDepth, length);
 		AbstractNodeTrieNode<Object> node = backend.getRoot();
 		for (int i = 0; i < l; ++i) {
 			node = node.addChild(buffer[offset+i]);
@@ -483,12 +529,23 @@ public class CompositeTrie<T> extends AbstractTrie<T> {
 			subTrie.put(buffer, offset + l, length - l, value);
 		} else {
 			node.value = value;
-		}
+		}*/
 	}
 
 	@Override
 	public void put(CharSequence sequence, int offset, int length, T value) {
-		int l = Math.min(rootDepth, length);
+		if (length < rootDepth) {
+			backend.put(sequence, offset, length, value);
+		} else {
+			@SuppressWarnings("unchecked")
+			Trie<T> sub = (Trie<T>) backend.get(sequence, offset, rootDepth);
+			if (sub == null) {
+				sub = childFactory.newTrie();
+				backend.put(sequence, offset, rootDepth, sub);
+			}
+			sub.put(sequence, offset + rootDepth, length - rootDepth, value);
+		}
+/*		int l = Math.min(rootDepth, length);
 		AbstractNodeTrieNode<Object> node = backend.getRoot();
 		for (int i = 0; i < l; ++i) {
 			node = node.addChild(sequence.charAt(offset+i));
@@ -503,13 +560,23 @@ public class CompositeTrie<T> extends AbstractTrie<T> {
 			subTrie.put(sequence, offset + l, length - l, value);
 		} else {
 			node.value = value;
-		}
+		}*/
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public T get(char[] buffer, int offset, int length) {
-		int l = Math.min(rootDepth, length);
+		if (length < rootDepth) {
+			return (T) backend.get(buffer, offset, length);
+		} else {
+			Trie<T> sub = (Trie<T>) backend.get(buffer, offset, rootDepth);
+			if (sub != null) {
+				return sub.get(buffer, offset + rootDepth, length - rootDepth);
+			} else {
+				return null;
+			}
+		}
+		/*int l = Math.min(rootDepth, length);
 		AbstractNodeTrieNode<Object> node = backend.getRoot();
 		for (int i = 0; i < l; ++i) {
 			node = node.getChild(buffer[offset+i]);
@@ -522,13 +589,23 @@ public class CompositeTrie<T> extends AbstractTrie<T> {
 			return subTrie.get(buffer, offset + l, length - l);
 		} else {
 			return (T) node.value;
-		}
+		}*/
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public T get(CharSequence sequence, int offset, int length) {
-		int l = Math.min(rootDepth, length);
+		if (length < rootDepth) {
+			return (T) backend.get(sequence, offset, length);
+		} else {
+			Trie<T> sub = (Trie<T>) backend.get(sequence, offset, rootDepth);
+			if (sub != null) {
+				return sub.get(sequence, offset + rootDepth, length - rootDepth);
+			} else {
+				return null;
+			}
+		}
+		/*int l = Math.min(rootDepth, length);
 		AbstractNodeTrieNode<Object> node = backend.getRoot();
 		for (int i = 0; i < l; ++i) {
 			node = node.getChild(sequence.charAt(offset+i));
@@ -541,7 +618,7 @@ public class CompositeTrie<T> extends AbstractTrie<T> {
 			return subTrie.get(sequence, offset + l, length - l);
 		} else {
 			return (T) node.value;
-		}
+		}*/
 	}
 
 	@Override
@@ -572,11 +649,36 @@ public class CompositeTrie<T> extends AbstractTrie<T> {
 	public void trimToSize() {
 		Cursor<Object> cursor = backend.getCursor();
 		Node root = cursor.getNode();
-		while (Tries.moveToNextNode(root, cursor)) {
+		while (TrieTraversal.DEPTH_FIRST.moveToNextNode(root, cursor)) {
 			Object value = cursor.getValue();
 			if (value instanceof Trie) {
 				((Trie<T>) value).trimToSize();
 			}
+		}
+	}
+
+	@Override
+	public void optimizeFor(TrieTraversal traversal) {
+		if (backend instanceof Optimizable) {
+			((Optimizable) backend).optimizeFor(traversal);
+		}
+		if (subTriesAreOptimizable) {
+			Cursor<Object> cursor = backend.getCursor();
+			Node root = cursor.getNode();
+			do {
+				if (cursor.depth() == rootDepth) {
+					break;
+				}
+			} while (TrieTraversal.DEPTH_FIRST.moveToNextNode(root, cursor));
+			do {
+				if (cursor.depth() != rootDepth) {
+					break;
+				}
+				Object value = cursor.getValue();
+				if (value != null) {
+					((Optimizable) value).optimizeFor(traversal);
+				}
+			} while (TrieTraversal.BREADTH_FIRST.moveToNextNode(root, cursor));
 		}
 	}
 }

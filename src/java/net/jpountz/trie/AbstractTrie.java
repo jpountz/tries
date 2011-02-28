@@ -1,5 +1,18 @@
 package net.jpountz.trie;
 
+import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
+import it.unimi.dsi.fastutil.chars.Char2ObjectRBTreeMap;
+import it.unimi.dsi.fastutil.chars.Char2ObjectSortedMap;
+import it.unimi.dsi.fastutil.chars.CharCollection;
+import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
+
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
+import net.jpountz.trie.util.IOUtils;
+import net.jpountz.trie.util.Serializer;
+
 
 /**
  * Base implementation for tries. By default, removals are performed by putting
@@ -9,29 +22,113 @@ abstract class AbstractTrie<T> implements Trie<T> {
 
 	protected static abstract class AbstractCursor<T> implements Cursor<T> {
 
-		protected final StringBuilder label;
+		protected abstract CharSequence getLabelInternal();
 
-		public AbstractCursor(StringBuilder label) {
-			this.label = label;
+		@Override
+		public char getFirstEdgeLabel() {
+			if (moveToFirstChild()) {
+				char result = getEdgeLabel();
+				moveToParent();
+				return result;
+			} else {
+				return '\0';
+			}
+		}
+
+		public boolean hasChildren() {
+			return getFirstEdgeLabel() == '\0';
 		}
 
 		@Override
-		public final String getLabel() {
-			return label.toString();
+		public Node getFirstChildNode() {
+			if (moveToFirstChild()) {
+				Node result = getNode();
+				moveToParent();
+				return result;
+			}
+			return null;
+		}
+		@Override
+		public char getBrotherEdgeLabel() {
+			char c = getEdgeLabel();
+			if (moveToBrother()) {
+				char result = getEdgeLabel();
+				moveToParent();
+				moveToChild(c);
+				return result;
+			} else {
+				return '\0';
+			}
+		}
+
+		public boolean hasBrother() {
+			return getBrotherEdgeLabel() == '\0';
 		}
 
 		@Override
-		public final int depth() {
-			return label.length();
+		public Node getBrotherNode() {
+			char edge = getEdgeLabel();
+			if (moveToBrother()) {
+				Node result = getNode();
+				moveToParent();
+				moveToChild(edge);
+				return result;
+			}
+			return null;
 		}
 
 		@Override
-		public final char getEdgeLabel() {
+		public void getChildren(Char2ObjectMap<Node> children) {
+			if (moveToFirstChild()) {
+				do {
+					children.put(getEdgeLabel(), getNode());
+				} while (moveToBrother());
+				moveToParent();
+			}
+		}
+
+		@Override
+		public String getLabel() {
+			return getLabelInternal().toString();
+		}
+
+		@Override
+		public int depth() {
+			return getLabelInternal().length();
+		}
+
+		@Override
+		public char getEdgeLabel() {
+			CharSequence label = getLabelInternal();
 			if (label.length() == 0) {
 				return '\0';
 			} else {
 				return label.charAt(label.length()-1);
 			}
+		}
+
+		@Override
+		public void getChildrenLabels(CharCollection children) {
+			if (moveToFirstChild()) {
+				children.add(getEdgeLabel());
+				while (moveToBrother()) {
+					children.add(getEdgeLabel());
+				}
+				moveToParent();
+			}
+		}
+
+		@Override
+		public int getChildrenSize() {
+			int result = 0;
+			if (moveToFirstChild()) {
+				++result;
+				while (moveToBrother()) {
+					++result;
+				}
+				moveToParent();
+			}
+			return result;
 		}
 
 		@Override
@@ -44,8 +141,134 @@ abstract class AbstractTrie<T> implements Trie<T> {
 			return getNode().equals(under);
 		}
 
+		@Override
+		public int size() {
+			Node node = getNode();
+			int size = 1;
+			while (TrieTraversal.DEPTH_FIRST.moveToNextNode(node, this)) {
+				++size;
+			}
+			return size;
+		}
+
 		public abstract AbstractCursor<T> clone();
 	}
+
+	@SuppressWarnings("unchecked")
+	static <T> Cursor<T> getEmptyCursor() {
+		return EMPTY_CURSOR;
+	}
+
+	@SuppressWarnings("rawtypes")
+	static final Cursor EMPTY_CURSOR = new AbstractCursor() {
+
+		protected CharSequence getLabelInternal() {
+			return "";
+		}
+
+		@Override
+		public Node getNode() {
+			return null;
+		}
+
+		@Override
+		public Node getFirstChildNode() {
+			return null;
+		}
+
+		@Override
+		public Node getBrotherNode() {
+			return null;
+		}
+
+		@Override
+		public void getChildren(Char2ObjectMap children) {}
+
+		@Override
+		public boolean isAtRoot() {
+			return true;
+		}
+
+		@Override
+		public boolean isAt(Node node) {
+			return node == null;
+		}
+
+		@Override
+		public int depth() {
+			return 0;
+		}
+
+		@Override
+		public String getLabel() {
+			return "";
+		}
+
+		@Override
+		public char getEdgeLabel() {
+			return '\0';
+		}
+
+		@Override
+		public boolean moveToChild(char c) {
+			return false;
+		}
+
+		@Override
+		public boolean moveToFirstChild() {
+			return false;
+		}
+
+		@Override
+		public boolean moveToBrother() {
+			return false;
+		}
+
+		@Override
+		public void addChild(char c) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public boolean removeChild(char c) {
+			return false;
+		}
+
+		@Override
+		public boolean moveToParent() {
+			return false;
+		}
+
+		@Override
+		public void getChildrenLabels(CharCollection children) {}
+
+		@Override
+		public int getChildrenSize() {
+			return 0;
+		}
+
+		@Override
+		public Object getValue() {
+			return null;
+		}
+
+		@Override
+		public void setValue(Object value) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void reset() {}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		public AbstractCursor clone() {
+			return this;
+		}
+	};
 
 	static class EntryImpl<T> implements Entry<T>, Comparable<Entry<T>> {
 
@@ -206,6 +429,86 @@ abstract class AbstractTrie<T> implements Trie<T> {
 
 	public void trimToSize() {
 		// Do nothing
+	}
+
+	void serialize(DataOutputStream output, Serializer<T> serializer, TrieTraversal traversal) throws IOException {
+		final Object2IntArrayMap<Node> sizes = new Object2IntArrayMap<Node>();
+		sizes.defaultReturnValue(0);
+		final Object2IntArrayMap<Node> offsets = new Object2IntArrayMap<Node>();
+		offsets.defaultReturnValue(0);
+		Cursor<T> cursor = getCursor();
+		Node root = cursor.getNode();
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		DataOutputStream os = new DataOutputStream(bos);
+		Char2ObjectSortedMap<Node> children = new Char2ObjectRBTreeMap<Node>();
+		String previousLabel = "42";
+		do {
+			String label = cursor.getLabel();
+			if (label.equals(previousLabel)) {
+				System.out.println("Error");
+			}
+			previousLabel = label;
+			System.out.println("Prepare: " + cursor.getLabel());
+			bos.reset();
+			children.clear();
+			Node node = serializeCursor(cursor, os, serializer, offsets, children);
+			sizes.put(node, bos.size());
+		} while (traversal.moveToNextNode(root, cursor));
+		int offset = 0;
+		int size = 0;
+		do {
+			Node node = cursor.getNode();
+			offset += size;
+			offsets.put(node, offset);
+			size = sizes.get(node);
+		} while (traversal.moveToNextNode(root, cursor));
+		do {
+			System.out.println("Serialize: " + cursor.getLabel());
+			children.clear();
+			serializeCursor(cursor, output, serializer, offsets, children);
+		} while (traversal.moveToNextNode(root, cursor));
+	}
+
+	private Node serializeCursor(Cursor<T> cursor, DataOutputStream os,
+			Serializer<T> serializer,
+			Object2IntArrayMap<Node> offsets,
+			Char2ObjectSortedMap<Node> children) throws IOException {
+		children.clear();
+		Node brother = cursor.getBrotherNode();
+		Node current = cursor.getNode();
+		if (cursor.moveToFirstChild()) {
+			do {
+				children.put(cursor.getEdgeLabel(), cursor.getNode());
+			} while (cursor.moveToBrother());
+			cursor.moveToParent();
+		}
+		serialize(current, os, serializer, offsets, cursor.getEdgeLabel(),
+				children, brother, cursor.getValue());
+		return current;
+	}
+
+	private void serialize(Node node, DataOutputStream os,
+			Serializer<T> serializer,
+			Object2IntArrayMap<Node> offsets,
+			char label, Char2ObjectSortedMap<Node> children,
+			Node brother, T value) throws IOException {
+		if (!offsets.isEmpty() && !offsets.containsKey(node)) {
+			throw new Error();
+		}
+		IOUtils.writeVInt(os, label);
+		IOUtils.writeVInt(os, children.size());
+		char previousLabel = '\0';
+		for (char c : children.keySet()) {
+			IOUtils.writeVInt(os, c - previousLabel);
+			IOUtils.writeInt(os, offsets.getInt(children.get(c)));
+			previousLabel = c;
+		}
+		if (brother != null) {
+			IOUtils.writeInt(os, offsets.getInt(brother));
+		} else {
+			IOUtils.writeInt(os, 0);
+		}
+		serializer.write(value, os);
 	}
 
 }

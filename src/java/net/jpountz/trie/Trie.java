@@ -1,5 +1,6 @@
 package net.jpountz.trie;
 
+import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
 import it.unimi.dsi.fastutil.chars.CharCollection;
 
 /**
@@ -31,6 +32,10 @@ public interface Trie<T> {
 		T getValue();
 	}
 
+	public interface Optimizable {
+		void optimizeFor(TrieTraversal traversal);
+	}
+
 	/**
 	 * An opaque reference to a node of the trie.
 	 */
@@ -49,6 +54,55 @@ public interface Trie<T> {
 		 * @return
 		 */
 		Node getNode();
+
+		/**
+		 * Return the first child.
+		 *
+		 * @return
+		 */
+		Node getFirstChildNode();
+
+		/**
+		 * Get the label leading to the first child node.
+		 *
+		 * @return the char or '\0' if there is no first child
+		 */
+		char getFirstEdgeLabel();
+
+		/**
+		 * Get whether there are children under this.
+		 *
+		 * @return
+		 */
+		boolean hasChildren();
+
+		/**
+		 * Return the first brother.
+		 *
+		 * @return the brother node
+		 */
+		Node getBrotherNode();
+
+		/**
+		 * Get the label leading to the first brother of the node.
+		 *
+		 * @return the char or '\0' if there is no brother
+		 */
+		char getBrotherEdgeLabel();
+
+		/**
+		 * Get whether there is a brother.
+		 *
+		 * @return
+		 */
+		boolean hasBrother();
+
+		/**
+		 * Get the children of this node.
+		 *
+		 * @param children
+		 */
+		void getChildren(Char2ObjectMap<Node> children);
 
 		/**
 		 * Get whether the cursor is at root.

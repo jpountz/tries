@@ -12,35 +12,6 @@ public class Tries {
 	private Tries() {}
 
 	/**
-	 * DFS traversing of the trie.
-	 *
-	 * @param <T> the node type
-	 * @param node the root node for traversing
-	 * @param cursor the cursor to move
-	 * @return false if all nodes have been traversed
-	 */
-	public static <T> boolean moveToNextNode(Trie.Node node, Trie.Cursor<T> cursor) {
-		if (cursor.moveToFirstChild() || cursor.moveToBrother()) {
-			return true;
-		} else {
-			if (cursor.isAt(node)) {
-				return false;
-			} else {
-				while (cursor.moveToParent()) {
-					if (cursor.isAt(node)) {
-						return false;
-					} else if (cursor.moveToBrother()) {
-						return true;
-					}
-				}
-				throw new IllegalStateException();
-			}
-		}
-	}
-
-
-
-	/**
 	 * Move to the next suffix lexicographically.
 	 *
 	 * @param <T> the value type
@@ -48,8 +19,9 @@ public class Tries {
 	 * @param cursor the cursor to move
 	 * @return false if there is no more suffix
 	 */
-	public static <T> boolean moveToNextSuffix(Trie.Node under, Trie.Cursor<T> cursor) {
-		while (moveToNextNode(under, cursor)) {
+	public static <T> boolean moveToNextSuffix(Trie.Node under,
+			Trie.Cursor<T> cursor, TrieTraversal traversal) {
+		while (traversal.moveToNextNode(under, cursor)) {
 			if (cursor.getValue() != null) {
 				return true;
 			}
@@ -217,5 +189,9 @@ public class Tries {
 			}
 		}
 	}*/
+
+	public static <T> Trie<T> union(Trie<T> t1, Trie<T> t2) {
+		return new MultiTrieView<T>(t1, t2);
+	}
 
 }

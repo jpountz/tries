@@ -23,11 +23,6 @@ public class HashMapTrieTest extends AbstractTrieTest {
 	}
 
 	@Override
-	public void testMoveToNextNode() {
-		// not supported
-	}
-
-	@Override
 	public void testGetNeightbors() {
 		// not supported
 	}

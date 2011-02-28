@@ -2,20 +2,23 @@ package net.jpountz.trie;
 
 public class CompositeTrieTest extends AbstractTrieTest {
 
+	private static final TrieFactory<Object> rootFactory = new TrieFactory<Object>() {
+		@Override
+		public Trie<Object> newTrie() {
+			return new FastCharMapTrie<Object>();
+		}
+	};
+
+	private static final TrieFactory<Integer> childFactory = new TrieFactory<Integer>() {
+		@Override
+		public Trie<Integer> newTrie() {
+			return new CompactArrayTrie<Integer>();
+		}
+	};
+
 	@Override
 	public Trie<Integer> newTrie() {
-		return new CompositeTrie<Integer>(new TrieFactory() {
-			@Override
-			public <V> Trie<V> newTrie() {
-				return new FastCharMapTrie<V>();
-			}
-		},
-		new TrieFactory() {
-			@Override
-			public <V> Trie<V> newTrie() {
-				return new ArrayTrie<V>();
-			}
-		}, 2);
+		return new CompositeTrie<Integer>(rootFactory, childFactory, 2);
 	}
 
 }

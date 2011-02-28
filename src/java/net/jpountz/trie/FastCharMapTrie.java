@@ -125,7 +125,7 @@ public class FastCharMapTrie<T> extends AbstractNodeTrie<T> {
 			return new FastCharMapTrieCursor<T>((FastCharMapTrie<T>) trie,
 					(FastCharMapTrieNode<T>) current,
 					new ArrayDeque<AbstractNodeTrieNode<T>>(parents),
-					new StringBuilder(label));
+					new StringBuilder(getLabelInternal()));
 		}
 	}
 

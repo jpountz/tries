@@ -1,7 +1,7 @@
 package net.jpountz.trie;
 
-public interface TrieFactory {
+public interface TrieFactory<T> {
 
-	<V >Trie<V> newTrie();
+	Trie<T> newTrie();
 
 }

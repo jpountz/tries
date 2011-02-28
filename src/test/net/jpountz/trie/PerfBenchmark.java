@@ -45,9 +45,10 @@ public class PerfBenchmark extends Benchmark {
 	private final char[][] wordsToRead;
 
 	public PerfBenchmark(List<char[]> words) {
-		this.wordsToWrite = words.toArray(new char[words.size()][]);
+		//words = words.subList(131, 144);
+		wordsToWrite = words.toArray(new char[words.size()][]);
 		Collections.shuffle(words);
-		this.wordsToRead = words.toArray(new char[words.size()][]);
+		wordsToRead = words.toArray(new char[words.size()][]);
 	}
 
 	public long testInsert(Trie<Boolean> trie) {
@@ -58,9 +59,16 @@ public class PerfBenchmark extends Benchmark {
 		return System.currentTimeMillis() - start;
 	}
 
+	@SuppressWarnings("rawtypes")
 	public long testTrimToSize(Trie<Boolean> trie) {
 		long start = System.currentTimeMillis();
+		if (trie instanceof Trie.Optimizable) {
+			((Trie.Optimizable) trie).optimizeFor(TrieTraversal.BREADTH_FIRST_THEN_DEPTH);
+		}
 		trie.trimToSize();
+		if (trie instanceof FastArrayTrie) {
+			trie = ((FastArrayTrie) trie).immutableCopy();
+		}
 		return System.currentTimeMillis() - start;
 	}
 
@@ -78,7 +86,7 @@ public class PerfBenchmark extends Benchmark {
 		long start = System.currentTimeMillis();
 		Trie.Cursor<Boolean> cursor = trie.getCursor();
 		Trie.Node under = cursor.getNode();
-		while (Tries.moveToNextSuffix(under, cursor)) {}
+		while (Tries.moveToNextSuffix(under, cursor, TrieTraversal.DEPTH_FIRST)) {}
 		return System.currentTimeMillis() - start;
 	}
 
@@ -110,10 +118,10 @@ public class PerfBenchmark extends Benchmark {
 		testTrimToSize(trie);
 		testLookup(trie);
 		try {
-			testEnumerate(trie);
+			//testEnumerate(trie);
 		} catch (UnsupportedOperationException e) { /* ignore */ }
 		try {
-			testNeighbors(trie);
+			//testNeighbors(trie);
 		} catch (UnsupportedOperationException e) { /* ignore */ }
 		for (int i = 0; i < n; ++i) {
 			trie = factory.newTrie();
@@ -121,12 +129,12 @@ public class PerfBenchmark extends Benchmark {
 			stats.trim += testTrimToSize(trie);
 			stats.lookup += testLookup(trie);
 			try {
-				stats.enumerate += testEnumerate(trie);
+				//stats.enumerate += testEnumerate(trie);
 			} catch (UnsupportedOperationException e) {
 				stats.enumerate -= 1;
 			}
 			try {
-				stats.neighbors += testNeighbors(trie);
+				//stats.neighbors += testNeighbors(trie);
 			} catch (UnsupportedOperationException e) {
 				stats.neighbors -= 1;
 			}
