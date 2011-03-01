@@ -62,9 +62,11 @@ public class PerfBenchmark extends Benchmark {
 	public long testTrimToSize(Trie<Boolean> trie) {
 		long start = System.currentTimeMillis();
 		if (trie instanceof Trie.Optimizable) {
-			((Trie.Optimizable) trie).optimizeFor(TrieTraversal.BREADTH_FIRST_THEN_DEPTH);
+			((Trie.Optimizable) trie).optimizeFor(Trie.Traversal.BREADTH_FIRST_THEN_DEPTH);
 		}
-		trie.trimToSize();
+		if (trie instanceof Trie.Trimmable) {
+			((Trie.Trimmable) trie).trimToSize();
+		}
 		if (trie instanceof FastArrayTrie) {
 			trie = ((FastArrayTrie<Boolean>) trie).immutableCopy();
 		}
@@ -85,7 +87,7 @@ public class PerfBenchmark extends Benchmark {
 		long start = System.currentTimeMillis();
 		Trie.Cursor<Boolean> cursor = trie.getCursor();
 		Trie.Node under = cursor.getNode();
-		while (Tries.moveToNextSuffix(under, cursor, TrieTraversal.DEPTH_FIRST)) {}
+		while (Tries.moveToNextSuffix(under, cursor, Trie.Traversal.DEPTH_FIRST)) {}
 		return System.currentTimeMillis() - start;
 	}
 

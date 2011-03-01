@@ -4,7 +4,9 @@ import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
 import it.unimi.dsi.fastutil.chars.CharCollection;
 
 /**
- * A trie. http://en.wikipedia.org/wiki/Trie
+ * A trie. http://en.wikipedia.org/wiki/Trie.
+ *
+ * Unless otherwise specified, instances of this class are not thread-safe.
  *
  * @param <T> the value type
  */
@@ -32,8 +34,154 @@ public interface Trie<T> {
 		T getValue();
 	}
 
+	/**
+	 * A strategy to traverse a trie.
+	 */
+	public interface Traversal {
+
+		/**
+		 * Traversing of the trie.
+		 *
+		 * @param <T> the node type
+		 * @param node the root node for traversing
+		 * @param cursor the cursor to move
+		 * @return false if all nodes have been traversed
+		 */
+		<T> boolean moveToNextNode(Trie.Node node, Trie.Cursor<T> cursor);
+
+		public static final Traversal DEPTH_FIRST = new Traversal() {
+			public <T> boolean moveToNextNode(Trie.Node node, Trie.Cursor<T> cursor) {
+				if (cursor.moveToFirstChild() || cursor.moveToBrother()) {
+					return true;
+				} else {
+					if (cursor.isAt(node)) {
+						return false;
+					} else {
+						while (cursor.moveToParent()) {
+							if (cursor.isAt(node)) {
+								return false;
+							} else if (cursor.moveToBrother()) {
+								return true;
+							}
+						}
+						throw new IllegalStateException();
+					}
+				}
+			}
+		};
+
+		public static final Traversal BREADTH_FIRST = new Traversal() {
+			public <T> boolean moveToNextNode(Trie.Node node, Trie.Cursor<T> cursor) {
+				if (cursor.moveToBrother()) {
+					return true;
+				} else {
+					int depth = cursor.depth();
+					int newDepth = depth;
+					while (true) {
+						if (cursor.isAt(node)) {
+							// go to the first node at depth + 1
+							++depth;
+							if (cursor.moveToFirstChild()) {
+								if (depth == cursor.depth()) {
+									return true;
+								}
+							} else {
+								return false; // nothing under node
+							}
+							while (true) {
+								if (cursor.moveToFirstChild()) {
+									if (depth == cursor.depth()) {
+										return true;
+									}
+								} else if (!cursor.moveToBrother()) {
+									while (cursor.moveToParent()) {
+										if (cursor.isAt(node)) {
+											return false;
+										} else if (cursor.moveToBrother()) {
+											break;
+										}
+									}
+								}
+							}
+						}
+						if (cursor.moveToParent()) {
+							--newDepth;
+						}
+						// go to the next node at depth
+						while (cursor.moveToBrother()) {
+							int previousDepth = newDepth;
+							while (cursor.moveToFirstChild()) {
+								++newDepth;
+								if (newDepth == depth) {
+									return true;
+								}
+							}
+							for (; newDepth > previousDepth+1; --newDepth) {
+								cursor.moveToParent();
+							}
+						}
+					}
+				}
+			}
+		};
+
+		public static final Traversal BREADTH_FIRST_THEN_DEPTH = new Traversal() {
+			public <T> boolean moveToNextNode(Trie.Node node, Trie.Cursor<T> cursor) {
+				if (cursor.moveToBrother()) {
+					return true;
+				} else {
+					if (cursor.moveToParent()) {
+						if (!cursor.moveToFirstChild()) {
+							return false;
+						}
+					}
+					if (cursor.moveToFirstChild()) {
+						return true;
+					} else {
+						while (true) {
+							while (cursor.moveToBrother()) {
+								if (cursor.moveToFirstChild()) {
+									return true;
+								}
+							}
+							cursor.moveToParent();
+							if (cursor.isAt(node)) {
+								return false;
+							}
+						}
+					}
+				}
+			}
+		};
+	}
+
+	/**
+	 * Indicates that the object is optimizable for a certain type
+	 * of traversal.
+	 */
 	public interface Optimizable {
-		void optimizeFor(TrieTraversal traversal);
+		/**
+		 * Optimize for a given type of traversal.
+		 *
+		 * Classes that implement this interface will alter the trie so that
+		 * traversal will be faster. This is usually done by putting close to
+		 * each other array slices that are likely to be read one after
+		 * another.
+		 *
+		 * @param traversal
+		 */
+		void optimizeFor(Traversal traversal);
+	}
+
+	/**
+	 * Indicates that this object allocates more memory than it needs upon
+	 * insertion in order to reduce the memory allocation overhead.
+	 */
+	public interface Trimmable {
+		/**
+		 * Set the capacity of this object to be equal to its size.
+		 */
+		void trimToSize();
 	}
 
 	/**
@@ -232,8 +380,18 @@ public interface Trie<T> {
 		Cursor<T> clone();
 	}
 
+	/**
+	 * Get a cursor on this trie.
+	 *
+	 * @return
+	 */
 	Cursor<T> getCursor();
 
+	/**
+	 * Remove all nodes of the trie except the root node.
+	 *
+	 * After this method has been called, size() will return 1.
+	 */
 	void clear();
 
 	void put(char[] buffer, int offset, int length, T value);
@@ -251,6 +409,10 @@ public interface Trie<T> {
 	T get(CharSequence sequence, int offset, int length);
 	T get(CharSequence sequence);
 
+	/**
+	 * Return the number of nodes in this trie.
+	 *
+	 * @return the number of nodes in the trie.
+	 */
 	int size();
-	void trimToSize();
 }

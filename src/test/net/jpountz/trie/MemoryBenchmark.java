@@ -53,7 +53,9 @@ public class MemoryBenchmark extends Benchmark {
 		}
 		gc();
 		afterInsert = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-		trie.trimToSize();
+		if (trie instanceof Trie.Trimmable) {
+			((Trie.Trimmable) trie).trimToSize();
+		}
 		gc();
 		afterTrim = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 		stats.afterInsert = afterInsert - before;

@@ -6,11 +6,12 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import java.util.Arrays;
 
 import net.jpountz.trie.Trie.Optimizable;
+import net.jpountz.trie.Trie.Trimmable;
 
 /**
  * Trie implementation based on backing arrays.
  */
-abstract class ArrayTrie<T> extends AbstractTrie<T> implements Optimizable {
+abstract class ArrayTrie<T> extends AbstractTrie<T> implements Optimizable, Trimmable {
 
 	private static class ArrayTrieNode implements Node {
 

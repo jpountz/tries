@@ -3,7 +3,12 @@ package net.jpountz.trie;
 import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
 import it.unimi.dsi.fastutil.chars.CharCollection;
 
-public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizable {
+/**
+ * A composite trie composed of a root trie, and several sub-tries.
+ * 
+ * @param <T> the value type
+ */
+public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizable, Trie.Trimmable {
 
 	static class CompositeNode implements Node {
 		final Node rootNode;
@@ -138,31 +143,6 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 			}
 		}
 
-		/*@Override
-		public boolean moveToChild(char c) {
-			if (childCursor != null) {
-				return childCursor.moveToChild(c);
-			} else {
-				if (subTriesCursor.moveToChild(c)) {
-					boolean move = rootCursor.moveToChild(c);
-					assert move;
-					return true;
-				} else {
-					final Trie<T> subTrie = subTriesCursor.getValue();
-					if (subTrie != null) {
-						childCursor = subTrie.getCursor();
-						if (childCursor.moveToChild(c)) {
-							return true;
-						} else {
-							return false;
-						}
-					} else {
-						return false;
-					}
-				}
-			}
-		}*/
-
 		@SuppressWarnings("unchecked")
 		@Override
 		public boolean moveToFirstChild() {
@@ -188,35 +168,6 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 			}
 		}
 
-		/*@Override
-		public boolean moveToFirstChild() {
-			if (childCursor != null) {
-				if (childCursor.moveToFirstChild()) {
-					return true;
-				} else {
-					return false;
-				}
-			} else {
-				if (rootCursor.moveToFirstChild()) {
-					boolean move = subTriesCursor.moveToFirstChild();
-					assert move;
-					return true;
-				} else {
-					final Trie<T> subTrie = subTriesCursor.getValue();
-					if (subTrie != null) {
-						childCursor = subTrie.getCursor();
-						if (childCursor.moveToFirstChild()) {
-							return true;
-						} else {
-							return false;
-						}
-					} else {
-						return false;
-					}
-				}
-			}
-		}*/
-
 		@Override
 		public boolean moveToBrother() {
 			if (childCursor != null) {
@@ -227,8 +178,6 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 				}
 			}
 			if (rootCursor.moveToBrother()) {
-				//boolean move = subTriesCursor.moveToBrother();
-				//assert move;
 				return true;
 			} else {
 				return false;
@@ -253,25 +202,6 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 				childCursor.addChild(c);
 			}
 		}
-
-		/*@Override
-		public void addChild(char c) {
-			int depth = depth();
-			if (depth < trie.rootDepth) {
-				rootCursor.addChild(c);
-				subTriesCursor.addChild(c);
-			} else {
-				if (childCursor == null) {
-					Trie<T> subTrie = subTriesCursor.getValue();
-					if (subTrie == null) {
-						subTrie = trie.childFactory.<T>newTrie();
-						subTriesCursor.setValue(subTrie);
-					}
-					childCursor = subTrie.getCursor();
-				}
-				childCursor.addChild(c);
-			}
-		}*/
 
 		@Override
 		public int depth() {
@@ -306,10 +236,6 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 				return childCursor.removeChild(c);
 			} else {
 				return rootCursor.removeChild(c);
-				/*boolean result = rootCursor.removeChild(c);
-				boolean result2 = subTriesCursor.removeChild(c);
-				assert result == result2;
-				return result;*/
 			}
 		}
 
@@ -322,10 +248,6 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 					childCursor = null;
 				}
 			}
-/*			boolean result = rootCursor.moveToParent();
-			boolean result2 = subTriesCursor.moveToParent();
-			assert result == result2;
-			return result;*/
 			return rootCursor.moveToParent();
 		}
 
@@ -364,15 +286,6 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 			}
 		}
 
-		/*@Override
-		public T getValue() {
-			if (childCursor != null) {
-				return childCursor.getValue();
-			} else {
-				return rootCursor.getValue();
-			}
-		}*/
-
 		@Override
 		public void setValue(T value) {
 			if (childCursor != null) {
@@ -390,15 +303,6 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 			}
 		}
 
-		/*@Override
-		public void setValue(T value) {
-			if (childCursor != null && !childCursor.isAtRoot()) {
-				childCursor.setValue(value);
-			} else {
-				rootCursor.setValue(value);
-			}
-		}*/
-
 		@Override
 		public void reset() {
 			rootCursor.reset();
@@ -412,7 +316,7 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 			} else {
 				Node node = rootCursor.getNode();
 				int size = 1;
-				while (TrieTraversal.DEPTH_FIRST.moveToNextNode(node, rootCursor)) {
+				while (Trie.Traversal.DEPTH_FIRST.moveToNextNode(node, rootCursor)) {
 					if (depth() == trie.rootDepth) {
 						@SuppressWarnings("unchecked")
 						Trie<T> subTrie = (Trie<T>) rootCursor.getValue();
@@ -431,6 +335,7 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 	private final Trie<Object> backend;
 	private final int rootDepth;
 	private final boolean subTriesAreOptimizable;
+	private final boolean subTriesAreTrimmable;
 
 	public CompositeTrie(TrieFactory<Object> parentFactory,
 			TrieFactory<T> childFactory, int rootDepth) {
@@ -440,66 +345,15 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 		this.rootDepth = rootDepth;
 		backend = parentFactory.newTrie();
 		this.childFactory = childFactory;
-		subTriesAreOptimizable = this.childFactory.newTrie() instanceof Optimizable;
+		Trie<T> subTrie = this.childFactory.newTrie();
+		subTriesAreOptimizable = subTrie instanceof Optimizable;
+		subTriesAreTrimmable   = subTrie instanceof Trimmable;
 	}
 
 	@Override
 	public Cursor<T> getCursor() {
 		return new CompositeCursor<T>(this);
 	}
-
-	/*public void put(char[] buffer, int offset, int length, T value) {
-		int limit = Math.min(length, rootDepth);
-		AbstractNodeTrieNode<Trie<T>> node = subTries.getRoot();
-		
-		for (int i = 0; i < limit; ++i) {
-			node = node.addChild(c);
-		}
-	}
-
-	@Override
-	public T get(char[] buffer, int offset, int length) {
-		if (length <= rootDepth) {
-			return root.get(buffer, offset, length);
-		}
-		AbstractNodeTrieNode<Trie<T>> node = subTries.getRoot();
-		int i = 0;
-		for (; i < length; ++i) {
-			AbstractNodeTrieNode<Trie<T>> child = node.getChild(buffer[offset+i]);
-			if (child == null) {
-				break;
-			} else {
-				node = child;
-			}
-		}
-		Trie<T> subTrie = node.value;
-		if (subTrie != null) {
-			return subTrie.get(buffer, offset + i, length - i);
-		}
-		return null;
-	}
-
-	@Override
-	public T get(CharSequence sequence, int offset, int length) {
-		if (length <= rootDepth) {
-			return root.get(sequence, offset, length);
-		}
-		AbstractNodeTrieNode<Trie<T>> node = subTries.getRoot();
-		int i = 0;
-		for (; i < length; ++i) {
-			AbstractNodeTrieNode<Trie<T>> child = node.getChild(sequence.charAt(offset+i));
-			if (child == null) {
-				break;
-			} else {
-				node = child;
-			}
-		}
-		Trie<T> subTrie = node.value;
-		if (subTrie != null) {
-			return subTrie.get(sequence, offset + i, length - i);
-		}
-		return null;
-	}*/
 
 	@Override
 	public void put(char[] buffer, int offset, int length, T value) {
@@ -514,22 +368,6 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 			}
 			sub.put(buffer, offset + rootDepth, length - rootDepth, value);
 		}
-		/*int l = Math.min(rootDepth, length);
-		AbstractNodeTrieNode<Object> node = backend.getRoot();
-		for (int i = 0; i < l; ++i) {
-			node = node.addChild(buffer[offset+i]);
-		}
-		if (l == rootDepth) {
-			@SuppressWarnings("unchecked")
-			Trie<T> subTrie = (Trie<T>) node.value;
-			if (subTrie == null) {
-				subTrie = childFactory.newTrie();
-				node.value = subTrie;
-			}
-			subTrie.put(buffer, offset + l, length - l, value);
-		} else {
-			node.value = value;
-		}*/
 	}
 
 	@Override
@@ -545,22 +383,6 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 			}
 			sub.put(sequence, offset + rootDepth, length - rootDepth, value);
 		}
-/*		int l = Math.min(rootDepth, length);
-		AbstractNodeTrieNode<Object> node = backend.getRoot();
-		for (int i = 0; i < l; ++i) {
-			node = node.addChild(sequence.charAt(offset+i));
-		}
-		if (l == rootDepth) {
-			@SuppressWarnings("unchecked")
-			Trie<T> subTrie = (Trie<T>) node.value;
-			if (subTrie == null) {
-				subTrie = childFactory.newTrie();
-				node.value = subTrie;
-			}
-			subTrie.put(sequence, offset + l, length - l, value);
-		} else {
-			node.value = value;
-		}*/
 	}
 
 	@SuppressWarnings("unchecked")
@@ -576,20 +398,6 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 				return null;
 			}
 		}
-		/*int l = Math.min(rootDepth, length);
-		AbstractNodeTrieNode<Object> node = backend.getRoot();
-		for (int i = 0; i < l; ++i) {
-			node = node.getChild(buffer[offset+i]);
-			if (node == null) {
-				return null;
-			}
-		}
-		if (l == rootDepth) {
-			Trie<T> subTrie = (Trie<T>) node.value;
-			return subTrie.get(buffer, offset + l, length - l);
-		} else {
-			return (T) node.value;
-		}*/
 	}
 
 	@SuppressWarnings("unchecked")
@@ -605,20 +413,6 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 				return null;
 			}
 		}
-		/*int l = Math.min(rootDepth, length);
-		AbstractNodeTrieNode<Object> node = backend.getRoot();
-		for (int i = 0; i < l; ++i) {
-			node = node.getChild(sequence.charAt(offset+i));
-			if (node == null) {
-				return null;
-			}
-		}
-		if (l == rootDepth) {
-			Trie<T> subTrie = (Trie<T>) node.value;
-			return subTrie.get(sequence, offset + l, length - l);
-		} else {
-			return (T) node.value;
-		}*/
 	}
 
 	@Override
@@ -628,37 +422,33 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 		backend.clear();
 	}
 
-	/*@Override
-	public int size() {
-		Cursor<Trie<T>> cursor = subTries.getCursor();
-		Node node = cursor.getNode();
-		int size = 1; // root
-		while (Tries.moveToNextNode(node, cursor)) {
-			Trie<T> value = cursor.getValue();
-			if (value == null) {
-				++size;
-			} else {
-				size += value.size();
-			}
-		}
-		return size;
-	}*/
-
-	@SuppressWarnings("unchecked")
 	@Override
 	public void trimToSize() {
-		Cursor<Object> cursor = backend.getCursor();
-		Node root = cursor.getNode();
-		while (TrieTraversal.DEPTH_FIRST.moveToNextNode(root, cursor)) {
-			Object value = cursor.getValue();
-			if (value instanceof Trie) {
-				((Trie<T>) value).trimToSize();
-			}
+		if (backend instanceof Trimmable) {
+			((Trimmable) backend).trimToSize();
+		}
+		if (subTriesAreTrimmable) {
+			Cursor<Object> cursor = backend.getCursor();
+			Node root = cursor.getNode();
+			do {
+				if (cursor.depth() == rootDepth) {
+					break;
+				}
+			} while (Trie.Traversal.DEPTH_FIRST.moveToNextNode(root, cursor));
+			do {
+				if (cursor.depth() != rootDepth) {
+					break;
+				}
+				Object value = cursor.getValue();
+				if (value != null) {
+					((Trimmable) value).trimToSize();
+				}
+			} while (Trie.Traversal.BREADTH_FIRST.moveToNextNode(root, cursor));
 		}
 	}
 
 	@Override
-	public void optimizeFor(TrieTraversal traversal) {
+	public void optimizeFor(Trie.Traversal traversal) {
 		if (backend instanceof Optimizable) {
 			((Optimizable) backend).optimizeFor(traversal);
 		}
@@ -669,7 +459,7 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 				if (cursor.depth() == rootDepth) {
 					break;
 				}
-			} while (TrieTraversal.DEPTH_FIRST.moveToNextNode(root, cursor));
+			} while (Trie.Traversal.DEPTH_FIRST.moveToNextNode(root, cursor));
 			do {
 				if (cursor.depth() != rootDepth) {
 					break;
@@ -678,7 +468,8 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 				if (value != null) {
 					((Optimizable) value).optimizeFor(traversal);
 				}
-			} while (TrieTraversal.BREADTH_FIRST.moveToNextNode(root, cursor));
+			} while (Trie.Traversal.BREADTH_FIRST.moveToNextNode(root, cursor));
 		}
 	}
+
 }

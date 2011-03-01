@@ -59,7 +59,7 @@ class ImmutableFastArrayTrie<T> extends ArrayTrie<T> {
 	}
 
 	@Override
-	public void optimizeFor(TrieTraversal traversal) {
+	public void optimizeFor(Trie.Traversal traversal) {
 		// read-only
 	}
 }

@@ -26,4 +26,24 @@ public class HashMapTrieTest extends AbstractTrieTest {
 	public void testGetNeightbors() {
 		// not supported
 	}
+
+	@Override
+	public void testEmptyTrie() {
+		// not supported
+	}
+
+	@Override
+	public void testMoveToNextNodeDF() {
+		// not supported
+	}
+
+	@Override
+	public void testMoveToNextNodeBF() {
+		// not supported
+	}
+	
+	@Override
+	public void testMoveToNextNodeBFTD() {
+		// not supported
+	}
 }

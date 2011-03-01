@@ -174,7 +174,7 @@ public class FastArrayTrie<T> extends ArrayTrie<T> {
 		Arrays.fill(children, NO_CHILD);
 	}
 
-	public void optimizeFor(TrieTraversal traversal) {
+	public void optimizeFor(Trie.Traversal traversal) {
 		FastArrayTrie<T> trie = new FastArrayTrie<T>(size(), growthFactor,
 				initialChildrenCapacity, childrenGrowthFactor);
 		ArrayTrieCursor<T> cursor = getCursor();

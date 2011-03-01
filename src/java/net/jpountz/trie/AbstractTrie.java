@@ -6,7 +6,7 @@ import it.unimi.dsi.fastutil.chars.CharCollection;
 
 /**
  * Base implementation for tries. By default, removals are performed by putting
- * null, and trimToSize is a no-op.
+ * null.
  */
 abstract class AbstractTrie<T> implements Trie<T> {
 
@@ -135,7 +135,7 @@ abstract class AbstractTrie<T> implements Trie<T> {
 		public int size() {
 			Node node = getNode();
 			int size = 1;
-			while (TrieTraversal.DEPTH_FIRST.moveToNextNode(node, this)) {
+			while (Trie.Traversal.DEPTH_FIRST.moveToNextNode(node, this)) {
 				++size;
 			}
 			return size;
@@ -415,10 +415,6 @@ abstract class AbstractTrie<T> implements Trie<T> {
 
 	public int size() {
 		return getCursor().size();
-	}
-
-	public void trimToSize() {
-		// Do nothing
 	}
 
 }

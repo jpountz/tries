@@ -89,7 +89,7 @@ public class CompactArrayTrie<T> extends ArrayTrie<T> {
 		Arrays.fill(children, NOT_FOUND);
 	}
 
-	public void optimizeFor(TrieTraversal traversal) {
+	public void optimizeFor(Trie.Traversal traversal) {
 		CompactArrayTrie<T> trie = new CompactArrayTrie<T>(size(), growthFactor);
 		ArrayTrieCursor<T> cursor = getCursor();
 		Node node = cursor.getNode();

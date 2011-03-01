@@ -20,7 +20,7 @@ public class Tries {
 	 * @return false if there is no more suffix
 	 */
 	public static <T> boolean moveToNextSuffix(Trie.Node under,
-			Trie.Cursor<T> cursor, TrieTraversal traversal) {
+			Trie.Cursor<T> cursor, Trie.Traversal traversal) {
 		while (traversal.moveToNextNode(under, cursor)) {
 			if (cursor.getValue() != null) {
 				return true;

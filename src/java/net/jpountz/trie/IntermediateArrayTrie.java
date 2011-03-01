@@ -137,7 +137,7 @@ public class IntermediateArrayTrie<T> extends ArrayTrie<T> {
 		Arrays.fill(childrenNodes, NO_CHILD_NODES);
 	}
 
-	public void optimizeFor(TrieTraversal traversal) {
+	public void optimizeFor(Trie.Traversal traversal) {
 		IntermediateArrayTrie<T> trie = new IntermediateArrayTrie<T>(size(), growthFactor,
 				initialChildrenCapacity, childrenGrowthFactor);
 		ArrayTrieCursor<T> cursor = getCursor();

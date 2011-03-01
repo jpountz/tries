@@ -106,9 +106,9 @@ public abstract class AbstractTrieTest extends TestCase {
 	public void testEmptyTrie() {
 		Cursor<Integer> cursor = trie.getCursor();
 		Trie.Node root = cursor.getNode();
-		assertFalse(TrieTraversal.BREADTH_FIRST.moveToNextNode(root, cursor));
-		assertFalse(TrieTraversal.DEPTH_FIRST.moveToNextNode(root, cursor));
-		assertFalse(TrieTraversal.BREADTH_FIRST_THEN_DEPTH.moveToNextNode(root, cursor));
+		assertFalse(Trie.Traversal.BREADTH_FIRST.moveToNextNode(root, cursor));
+		assertFalse(Trie.Traversal.DEPTH_FIRST.moveToNextNode(root, cursor));
+		assertFalse(Trie.Traversal.BREADTH_FIRST_THEN_DEPTH.moveToNextNode(root, cursor));
 	}
 
 	public void testCursor() {
@@ -167,7 +167,7 @@ public abstract class AbstractTrieTest extends TestCase {
 		Cursor<Integer> cursor = trie.getCursor();
 		cursor.moveToChild('a');
 		Trie.Node under = cursor.getNode();
-		TrieTraversal traversal = TrieTraversal.DEPTH_FIRST;
+		Trie.Traversal traversal = Trie.Traversal.DEPTH_FIRST;
 		assertTrue(Tries.moveToNextSuffix(under, cursor, traversal));
 		assertEquals("ab", cursor.getLabel());
 		assertTrue(Tries.moveToNextSuffix(under, cursor, traversal));
@@ -181,7 +181,7 @@ public abstract class AbstractTrieTest extends TestCase {
 		assertFalse(Tries.moveToNextSuffix(under, cursor, traversal));
 	}
 
-	public void testMoveToNextNode(TrieTraversal traversal, String[] labels) {
+	public void testMoveToNextNode(Trie.Traversal traversal, String[] labels) {
 		trie.put("aef", 3);
 		trie.put("ab", 1);
 		trie.put("abcd", 2);
@@ -205,21 +205,21 @@ public abstract class AbstractTrieTest extends TestCase {
 		String[] labels = new String[] {
 				"a", "ab", "abc", "abcd", "ae", "aed", "aedf", "aedfg", "aef", "e", "ed", "ef", "efg", "eg"
 		};
-		testMoveToNextNode(TrieTraversal.DEPTH_FIRST, labels);
+		testMoveToNextNode(Trie.Traversal.DEPTH_FIRST, labels);
 	}
 
 	public void testMoveToNextNodeBFTD() {
 		String[] labels = new String[] {
 				"a", "e", "ab", "ae", "abc", "abcd", "aed", "aef", "aedf", "aedfg", "ed", "ef", "eg", "efg"
 		};
-		testMoveToNextNode(TrieTraversal.BREADTH_FIRST_THEN_DEPTH, labels);
+		testMoveToNextNode(Trie.Traversal.BREADTH_FIRST_THEN_DEPTH, labels);
 	}
 
 	public void testMoveToNextNodeBF() {
 		String[] labels = new String[] {
 				"a", "e", "ab", "ae", "ed", "ef", "eg", "abc", "aed", "aef", "efg", "abcd", "aedf", "aedfg"
 		};
-		testMoveToNextNode(TrieTraversal.BREADTH_FIRST, labels);
+		testMoveToNextNode(Trie.Traversal.BREADTH_FIRST, labels);
 	}
 
 	public void testGetNeightbors() {
