@@ -1,7 +1,6 @@
 package net.jpountz.trie;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -56,18 +55,6 @@ public class Benchmark {
 			@Override
 			public Trie<Boolean> newTrie() {
 				return new FastArrayTrie<Boolean>();
-			}
-		});
-		FACTORIES.add(new TrieFactory<Boolean>() {
-			@Override
-			public Trie<Boolean> newTrie() {
-				try {
-					return new DiskBasedTrie<Boolean>(new File("pouet"),
-							DiskBasedTrieTest.BOOLEAN_SERIALIZER,
-							TrieTraversal.BREADTH_FIRST_THEN_DEPTH);
-				} catch (IOException e) {
-					throw new Error();
-				}
 			}
 		});
 		/*FACTORIES.add(new TrieFactory() {

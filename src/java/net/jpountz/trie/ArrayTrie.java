@@ -3,14 +3,9 @@ package net.jpountz.trie;
 import it.unimi.dsi.fastutil.chars.CharCollection;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.util.Arrays;
 
 import net.jpountz.trie.Trie.Optimizable;
-import net.jpountz.trie.util.IOUtils;
-import net.jpountz.trie.util.Serializer;
 
 /**
  * Trie implementation based on backing arrays.
@@ -403,63 +398,6 @@ abstract class ArrayTrie<T> extends AbstractTrie<T> implements Optimizable {
 	@Override
 	public int size() {
 		return size;
-	}
-
-	private void serialize(final int nodeId, DataOutputStream os,
-			Serializer<T> serializer, int[] offsets) throws IOException {
-		IOUtils.writeVInt(os, labels[nodeId]);
-		int size = 0;
-		int child = child(nodeId);
-		while (child != NOT_FOUND) {
-			++size;
-			child = brother(child);
-		}
-		IOUtils.writeVInt(os, size);
-		child = child(nodeId);
-		char previousLabel = '\0';
-		while (child != NOT_FOUND) {
-			IOUtils.writeVInt(os, label(child) - previousLabel);
-			IOUtils.writeInt(os, offsets[child]);
-			previousLabel = label(child);
-			child = brother(child);
-		}
-		int brother = brother(nodeId);
-		if (brother == NOT_FOUND) {
-			IOUtils.writeInt(os, 0);
-		} else {
-			IOUtils.writeInt(os, offsets[brother]);
-		}
-		serializer.write(getValue(nodeId), os);
-	}
-
-	@Override
-	void serialize(DataOutputStream output, Serializer<T> serializer,
-			TrieTraversal traversal) throws IOException {
-		int[] sizes = new int[size()];
-		int[] offsets = new int[size()];
-		ArrayTrieCursor<T> cursor = getCursor();
-		Node root = cursor.getNode();
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		DataOutputStream os = new DataOutputStream(bos);
-		serialize(0, os, serializer, offsets);
-		sizes[START] = bos.size();
-		while (traversal.moveToNextNode(root, cursor)) {
-			int nodeId = cursor.getNodeId();
-			bos.reset();
-			serialize(nodeId, os, serializer, offsets);
-			sizes[nodeId] = bos.size();
-		}
-		int offset = 0;
-		int size = sizes[START];
-		while (traversal.moveToNextNode(root, cursor)) {
-			int nodeId = cursor.getNodeId();
-			offset += size;
-			offsets[nodeId] = offset;
-			size = sizes[nodeId];
-		}
-		do {
-			serialize(cursor.getNodeId(), output, serializer, offsets);
-		} while (traversal.moveToNextNode(root, cursor));
 	}
 
 }

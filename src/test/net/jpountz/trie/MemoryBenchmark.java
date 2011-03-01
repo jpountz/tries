@@ -12,7 +12,7 @@ public class MemoryBenchmark extends Benchmark {
 		List<char[]> words = readWords(args[0]);
 		MemoryBenchmark pb = new MemoryBenchmark(words);
 		int n = 5;
-		for (TrieFactory factory : FACTORIES) {
+		for (TrieFactory<Boolean> factory : FACTORIES) {
 			Stats stats = pb.test(factory, n);
 			System.out.println(factory.newTrie().getClass().getSimpleName());
 			System.out.print(" - after insert : ");
@@ -41,7 +41,7 @@ public class MemoryBenchmark extends Benchmark {
 		Thread.sleep(3000);
 	}
 
-	public Stats testMemory(TrieFactory factory) throws InterruptedException {
+	public Stats testMemory(TrieFactory<Boolean> factory) throws InterruptedException {
 		factory.newTrie(); // to ensure static data structures are loaded
 		Stats stats = new Stats();
 		long before, afterInsert, afterTrim;
@@ -62,7 +62,7 @@ public class MemoryBenchmark extends Benchmark {
 		return stats;
 	}
 
-	public Stats test(TrieFactory factory, int n) throws InterruptedException {
+	public Stats test(TrieFactory<Boolean> factory, int n) throws InterruptedException {
 		Stats stats = new Stats();
 		stats.afterInsert = Long.MAX_VALUE;
 		stats.afterTrim = Long.MAX_VALUE;

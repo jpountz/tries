@@ -1,17 +1,7 @@
 package net.jpountz.trie;
 
 import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
-import it.unimi.dsi.fastutil.chars.Char2ObjectRBTreeMap;
-import it.unimi.dsi.fastutil.chars.Char2ObjectSortedMap;
 import it.unimi.dsi.fastutil.chars.CharCollection;
-import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
-
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-
-import net.jpountz.trie.util.IOUtils;
-import net.jpountz.trie.util.Serializer;
 
 
 /**
@@ -429,86 +419,6 @@ abstract class AbstractTrie<T> implements Trie<T> {
 
 	public void trimToSize() {
 		// Do nothing
-	}
-
-	void serialize(DataOutputStream output, Serializer<T> serializer, TrieTraversal traversal) throws IOException {
-		final Object2IntArrayMap<Node> sizes = new Object2IntArrayMap<Node>();
-		sizes.defaultReturnValue(0);
-		final Object2IntArrayMap<Node> offsets = new Object2IntArrayMap<Node>();
-		offsets.defaultReturnValue(0);
-		Cursor<T> cursor = getCursor();
-		Node root = cursor.getNode();
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		DataOutputStream os = new DataOutputStream(bos);
-		Char2ObjectSortedMap<Node> children = new Char2ObjectRBTreeMap<Node>();
-		String previousLabel = "42";
-		do {
-			String label = cursor.getLabel();
-			if (label.equals(previousLabel)) {
-				System.out.println("Error");
-			}
-			previousLabel = label;
-			System.out.println("Prepare: " + cursor.getLabel());
-			bos.reset();
-			children.clear();
-			Node node = serializeCursor(cursor, os, serializer, offsets, children);
-			sizes.put(node, bos.size());
-		} while (traversal.moveToNextNode(root, cursor));
-		int offset = 0;
-		int size = 0;
-		do {
-			Node node = cursor.getNode();
-			offset += size;
-			offsets.put(node, offset);
-			size = sizes.get(node);
-		} while (traversal.moveToNextNode(root, cursor));
-		do {
-			System.out.println("Serialize: " + cursor.getLabel());
-			children.clear();
-			serializeCursor(cursor, output, serializer, offsets, children);
-		} while (traversal.moveToNextNode(root, cursor));
-	}
-
-	private Node serializeCursor(Cursor<T> cursor, DataOutputStream os,
-			Serializer<T> serializer,
-			Object2IntArrayMap<Node> offsets,
-			Char2ObjectSortedMap<Node> children) throws IOException {
-		children.clear();
-		Node brother = cursor.getBrotherNode();
-		Node current = cursor.getNode();
-		if (cursor.moveToFirstChild()) {
-			do {
-				children.put(cursor.getEdgeLabel(), cursor.getNode());
-			} while (cursor.moveToBrother());
-			cursor.moveToParent();
-		}
-		serialize(current, os, serializer, offsets, cursor.getEdgeLabel(),
-				children, brother, cursor.getValue());
-		return current;
-	}
-
-	private void serialize(Node node, DataOutputStream os,
-			Serializer<T> serializer,
-			Object2IntArrayMap<Node> offsets,
-			char label, Char2ObjectSortedMap<Node> children,
-			Node brother, T value) throws IOException {
-		if (!offsets.isEmpty() && !offsets.containsKey(node)) {
-			throw new Error();
-		}
-		IOUtils.writeVInt(os, label);
-		IOUtils.writeVInt(os, children.size());
-		char previousLabel = '\0';
-		for (char c : children.keySet()) {
-			IOUtils.writeVInt(os, c - previousLabel);
-			IOUtils.writeInt(os, offsets.getInt(children.get(c)));
-			previousLabel = c;
-		}
-		if (brother != null) {
-			IOUtils.writeInt(os, offsets.getInt(brother));
-		} else {
-			IOUtils.writeInt(os, 0);
-		}
-		serializer.write(value, os);
 	}
 
 }

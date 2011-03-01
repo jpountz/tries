@@ -12,7 +12,7 @@ public class Tries {
 	private Tries() {}
 
 	/**
-	 * Move to the next suffix lexicographically.
+	 * Move to the next suffix in the order of traversal.
 	 *
 	 * @param <T> the value type
 	 * @param under node to look for suffixes under
@@ -125,73 +125,6 @@ public class Tries {
 				cursor.moveToParent();
 			}
 		}
-	}
-
-/*	public static <T> void getNeighbors(char[] buffer, int offset, int length,
-			Trie.Cursor<T> cursor, int distance, Collection<Trie.Entry<T>> neighbors) {
-		cursor.reset();
-		while (true) {
-			// 1. Move
-			if (cursor.moveToFirstChild()) {
-				if (length <= 0 || buffer[offset] != cursor.getEdgeLabel()) {
-					--distance;
-				}
-				++offset;
-				--length;
-			} else  {
-				char previousLabel = cursor.getEdgeLabel();
-				if (cursor.moveToBrother()) { 
-					if (length >= 0) {
-						if (previousLabel == buffer[offset - 1]) {
-							--distance;
-						} else {
-							char currentLabel = cursor.getEdgeLabel();
-							if (currentLabel == buffer[offset - 1]) {
-								++distance;
-							}
-						}
-					} // else no change to distance
-				} else {
-					char childLabel = cursor.getEdgeLabel();
-					while (true) {
-						if (!cursor.moveToParent()) {
-							return;
-						}
-						if (length > 0 && childLabel != buffer[offset]) {
-							++distance;
-						}
-						--offset;
-						++length;
-						childLabel = cursor.getEdgeLabel();
-						if (cursor.moveToBrother()) {
-							if (length >= 0) {
-								if (previousLabel == buffer[offset - 1]) {
-									--distance;
-								} else {
-									char currentLabel = cursor.getEdgeLabel();
-									if (currentLabel == buffer[offset - 1]) {
-										++distance;
-									}
-								}
-							} // else no change to distance
-							break;
-						}
-					}
-				}
-			}
-
-			// 2. Check
-			if (Math.abs(length) <= distance) {
-				T value = cursor.getValue();
-				if (value != null) {
-					neighbors.add(new AbstractTrie.EntryImpl<T>(cursor.getLabel(), value));
-				}
-			}
-		}
-	}*/
-
-	public static <T> Trie<T> union(Trie<T> t1, Trie<T> t2) {
-		return new MultiTrieView<T>(t1, t2);
 	}
 
 }

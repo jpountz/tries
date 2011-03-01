@@ -15,7 +15,7 @@ public class PerfBenchmark extends Benchmark {
 		List<char[]> words = readWords(args[0]);
 		PerfBenchmark pb = new PerfBenchmark(words);
 		int n = 20;
-		for (TrieFactory factory : FACTORIES) {
+		for (TrieFactory<Boolean> factory : FACTORIES) {
 			System.gc();
 			Thread.sleep(3000);
 			Stats stats = pb.test(factory, n);
@@ -59,7 +59,6 @@ public class PerfBenchmark extends Benchmark {
 		return System.currentTimeMillis() - start;
 	}
 
-	@SuppressWarnings("rawtypes")
 	public long testTrimToSize(Trie<Boolean> trie) {
 		long start = System.currentTimeMillis();
 		if (trie instanceof Trie.Optimizable) {
@@ -67,7 +66,7 @@ public class PerfBenchmark extends Benchmark {
 		}
 		trie.trimToSize();
 		if (trie instanceof FastArrayTrie) {
-			trie = ((FastArrayTrie) trie).immutableCopy();
+			trie = ((FastArrayTrie<Boolean>) trie).immutableCopy();
 		}
 		return System.currentTimeMillis() - start;
 	}
@@ -111,7 +110,7 @@ public class PerfBenchmark extends Benchmark {
 		public long neighbors = 0;
 	}
 
-	public Stats test(TrieFactory factory, int n) {
+	public Stats test(TrieFactory<Boolean> factory, int n) {
 		Stats stats = new Stats();
 		Trie<Boolean> trie = factory.newTrie();
 		testInsert(trie);
