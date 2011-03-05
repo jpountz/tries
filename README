@@ -1,1 +1,5 @@
 Comparison of several trie implementations in Java.
+
+This work has been inspired by the Trie implementation from Julien Lemoine
+based on backing arrays:
+  http://wikipedia-clustering.speedblue.org/trieJava.php
