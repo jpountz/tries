@@ -5,7 +5,7 @@ public class CompositeTrieTest extends AbstractTrieTest {
 	private static final TrieFactory<Object> rootFactory = new TrieFactory<Object>() {
 		@Override
 		public Trie<Object> newTrie() {
-			return new FastCharMapTrie<Object>();
+			return new FastArrayTrie<Object>();
 		}
 	};
 

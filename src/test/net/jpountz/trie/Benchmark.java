@@ -10,7 +10,49 @@ public class Benchmark {
 
 	protected static final List<TrieFactory<Boolean>> FACTORIES = new ArrayList<TrieFactory<Boolean>>();
 	static {
+		FACTORIES.add(new TrieFactory<Boolean>() {
+			@Override
+			public Trie<Boolean> newTrie() {
+				return new HashMapTrie<Boolean>();
+			}
+		});
+		FACTORIES.add(new TrieFactory<Boolean>() {
+			@Override
+			public Trie<Boolean> newTrie() {
+				return new TreeMapTrie<Boolean>();
+			}
+		});
+		FACTORIES.add(new TrieFactory<Boolean>() {
+			@Override
+			public Trie<Boolean> newTrie() {
+				return new CompactArrayTrie<Boolean>();
+			}
+		});
+		FACTORIES.add(new TrieFactory<Boolean>() {
+			@Override
+			public Trie<Boolean> newTrie() {
+				return new BloomFilteredTrie<Boolean>(
+						new TrieFactory<Boolean>() {
+							@Override
+							public Trie<Boolean> newTrie() {
+								return new CompactArrayTrie<Boolean>();
+							}
+						}, StringHash.INSTANCE, 1024*64);
+			}
+		});
 		/*FACTORIES.add(new TrieFactory<Boolean>() {
+			@Override
+			public Trie<Boolean> newTrie() {
+				return new IntermediateArrayTrie<Boolean>();
+			}
+		});*/
+		FACTORIES.add(new TrieFactory<Boolean>() {
+			@Override
+			public Trie<Boolean> newTrie() {
+				return new FastArrayTrie<Boolean>();
+			}
+		});
+		FACTORIES.add(new TrieFactory<Boolean>() {
 			@Override
 			public Trie<Boolean> newTrie() {
 				return new CompositeTrie<Boolean>(new TrieFactory<Object>() {
@@ -26,53 +68,21 @@ public class Benchmark {
 					}
 				}, 2);
 			}
-		});*/
-		FACTORIES.add(new TrieFactory<Boolean>() {
-			@Override
-			public Trie<Boolean> newTrie() {
-				return new HashMapTrie<Boolean>();
-			}
-		});
-		/*FACTORIES.add(new TrieFactory() {
-			@Override
-			public <T> Trie<T> newTrie() {
-				return new SimpleTrie<T>();
-			}
-		});*/
-		FACTORIES.add(new TrieFactory<Boolean>() {
-			@Override
-			public Trie<Boolean> newTrie() {
-				return new CompactArrayTrie<Boolean>();
-			}
 		});
 		FACTORIES.add(new TrieFactory<Boolean>() {
 			@Override
 			public Trie<Boolean> newTrie() {
-				return new IntermediateArrayTrie<Boolean>();
+				return new CompactArrayRadixTrie<Boolean>();
 			}
 		});
-		FACTORIES.add(new TrieFactory<Boolean>() {
-			@Override
-			public Trie<Boolean> newTrie() {
-				return new FastArrayTrie<Boolean>();
-			}
-		});
-		/*FACTORIES.add(new TrieFactory() {
-			@Override
-			public <T> Trie<T> newTrie() {
-				return new FastCharMapTrie<T>();
-			}
-		});*/
 	}
 
-	protected static List<char[]> readWords(String path) throws IOException {
+	protected static List<String> readWords(String path) throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(path));
-		List<char[]> words = new ArrayList<char[]>();
+		List<String> words = new ArrayList<String>();
 		String line;
 		while ((line = reader.readLine()) != null) {
-			char[] buffer = new char[line.length()];
-			line.getChars(0, line.length(), buffer, 0);
-			words.add(buffer);
+			words.add(line);
 		}
 		return words;
 	}

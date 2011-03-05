@@ -65,15 +65,17 @@
   </target>
 
   <target name="test_perf" depends="compile-tests">
-    <input message="File:" addproperty="file" />
-    <java classname="net.jpountz.trie.PerfBenchmark" fork="true">
+    <input message="File containing the words to read:" addproperty="writes" />
+    <input message="File containing the words to read:" addproperty="reads" />
+    <java classname="net.jpountz.trie.ReadPerfBenchmark" fork="true">
       <jvmarg value="-Xms250m" />
       <jvmarg value="-Xmx250m" />
       <jvmarg value="-server" />
       <jvmarg value="-XX:+AggressiveOpts" />
       <jvmarg value="-XX:+UseFastAccessorMethods" />
       <jvmarg value="-XX:CompileThreshold=1" />
-      <arg value="${file}" />
+      <arg value="${writes}" />
+      <arg value="${reads}" />
       <classpath>
         <fileset dir="${lib.dir}" includes="*.jar"/>
         <pathelement location="${build.classes}" />
@@ -83,12 +85,12 @@
   </target>
 
   <target name="test_mem" depends="compile-tests">
-    <input message="File:" addproperty="file" />
+    <input message="Words to insert:" addproperty="writes" />
     <java classname="net.jpountz.trie.MemoryBenchmark" fork="true">
       <jvmarg value="-Xms250m" />
       <jvmarg value="-Xmx250m" />
       <jvmarg value="-server" />
-      <arg value="${file}" />
+      <arg value="${writes}" />
       <classpath>
         <fileset dir="${lib.dir}" includes="*.jar"/>
         <pathelement location="${build.classes}" />

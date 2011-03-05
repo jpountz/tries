@@ -2,7 +2,7 @@ package net.jpountz.trie;
 
 import java.util.Arrays;
 
-public class CompactArrayTrie<T> extends ArrayTrie<T> {
+public class CompactArrayTrie<T> extends ArrayTrie<T> implements Trie.Optimizable, Trie.Trimmable {
 
 	private int[] children;
 
@@ -14,6 +14,57 @@ public class CompactArrayTrie<T> extends ArrayTrie<T> {
 
 	public CompactArrayTrie() {
 		this(DEFAULT_CAPACITY, DEFAULT_GROWTH_FACTOR);
+	}
+
+	@Override
+	protected void setDeleted(int node) {
+		super.setDeleted(node);
+		children[node] = NOT_FOUND;
+	}
+
+	@Override
+	protected boolean removeChild(int node, char c) {
+		int child = child(node);
+		if (child == NOT_FOUND) {
+			return false;
+		} else if (label(child) == c) {
+			children[node] = brother(child);
+			removeChildren(child);
+			setDeleted(child);
+			return true;
+		} else if (label(child) < c) {
+			int previousChild = child;
+			while (true) {
+				previousChild = child;
+				child = brother(child);
+				if (child == NOT_FOUND) {
+					return false;
+				}
+				if (label(child) == c) {
+					removeChildren(child);
+					setBrother(previousChild, brother(child));
+					setDeleted(child);
+					return true;
+				} else if (label(child) > c) {
+					return false;
+				}
+			}
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	protected void removeChildren(int node) {
+		int child = child(node);
+		while (child != NOT_FOUND) {
+			removeChildren(child);
+			setDeleted(child);
+			int newChild = brother(child);
+			setBrother(child, NOT_FOUND);
+			child = newChild;
+		}
+		children[node] = NOT_FOUND;
 	}
 
 	protected int child(int position) {

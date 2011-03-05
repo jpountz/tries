@@ -103,6 +103,27 @@ public abstract class AbstractTrieTest extends TestCase {
 		assertEquals(2, trie.get("abcd").intValue());
 	}
 
+	public void testRemove() {
+		trie.put("abcdef", 3);
+		trie.put("abcfgh", 4);
+		trie.put("abchij", 5);
+		assertEquals(13, trie.size());
+		trie.remove("abc");
+		assertEquals(13, trie.size());
+		trie.remove("abcdefgh");
+		assertEquals(13, trie.size());
+		trie.remove("abcfgh");
+		assertEquals(10, trie.size());
+		assertEquals(Integer.valueOf(3), trie.get("abcdef"));
+		assertEquals(Integer.valueOf(5), trie.get("abchij"));
+		trie.remove("abcdef");
+		assertEquals(7, trie.size());
+		assertEquals(Integer.valueOf(5), trie.get("abchij"));
+		trie.remove("abchij");
+		assertEquals(1, trie.size());
+		assertFalse(trie.getCursor().moveToFirstChild());
+	}
+
 	public void testEmptyTrie() {
 		Cursor<Integer> cursor = trie.getCursor();
 		Trie.Node root = cursor.getNode();
@@ -193,6 +214,12 @@ public abstract class AbstractTrieTest extends TestCase {
 		trie.put("eg", 12);
 		int n = 0;
 		Cursor<Integer> cursor = trie.getCursor();
+		for (String label : labels) {
+			for (int i = 0; i < label.length(); ++i) {
+				assertTrue(cursor.moveToChild(label.charAt(i)));
+			}
+			cursor.reset();
+		}
 		Trie.Node root = cursor.getNode();
 		while (traversal.moveToNextNode(root, cursor)) {
 			assertEquals(labels[n++], cursor.getLabel());

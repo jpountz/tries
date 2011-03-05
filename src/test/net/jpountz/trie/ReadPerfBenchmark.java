@@ -3,17 +3,19 @@ package net.jpountz.trie;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-public class PerfBenchmark extends Benchmark {
+public class ReadPerfBenchmark extends Benchmark {
 
 	public static void main(String[] args) throws IOException, InterruptedException {
-		if (args.length == 0) {
-			throw new IllegalArgumentException("Missing argument: file");
+		if (args.length < 2) {
+			throw new IllegalArgumentException("Arguments: writes, reads");
 		}
-		List<char[]> words = readWords(args[0]);
-		PerfBenchmark pb = new PerfBenchmark(words);
+		List<String> writes = readWords(args[0]);
+		List<String> reads = readWords(args[1]);
+		ReadPerfBenchmark pb = new ReadPerfBenchmark(writes, reads);
 		int n = 20;
 		for (TrieFactory<Boolean> factory : FACTORIES) {
 			System.gc();
@@ -41,14 +43,14 @@ public class PerfBenchmark extends Benchmark {
 		}
 	}
 
-	private final char[][] wordsToWrite;
-	private final char[][] wordsToRead;
+	private final String[] wordsToWrite;
+	private final String[] wordsToRead;
 
-	public PerfBenchmark(List<char[]> words) {
-		//words = words.subList(131, 144);
-		wordsToWrite = words.toArray(new char[words.size()][]);
-		Collections.shuffle(words);
-		wordsToRead = words.toArray(new char[words.size()][]);
+	public ReadPerfBenchmark(List<String> writes, List<String> reads) {
+		Collections.shuffle(writes);
+		wordsToWrite = writes.toArray(new String[writes.size()]);
+		Collections.shuffle(reads);
+		wordsToRead = reads.toArray(new String[reads.size()]);
 	}
 
 	public long testInsert(Trie<Boolean> trie) {
@@ -59,6 +61,7 @@ public class PerfBenchmark extends Benchmark {
 		return System.currentTimeMillis() - start;
 	}
 
+	@SuppressWarnings("unchecked")
 	public long testTrimToSize(Trie<Boolean> trie) {
 		long start = System.currentTimeMillis();
 		if (trie instanceof Trie.Optimizable) {
@@ -70,24 +73,41 @@ public class PerfBenchmark extends Benchmark {
 		if (trie instanceof FastArrayTrie) {
 			trie = ((FastArrayTrie<Boolean>) trie).immutableCopy();
 		}
+		if (trie instanceof Trie.Compilable) {
+			trie = ((Trie.Compilable<Boolean>) trie).compile();
+		}
+		if (trie instanceof RadixTrie.LabelsInternable) {
+			((RadixTrie.LabelsInternable) trie).internLabels(new TrieFactory<char[]>() {
+				@Override
+				public Trie<char[]> newTrie() {
+					return new CompactArrayTrie<char[]>();
+				}
+				
+			});
+		}
 		return System.currentTimeMillis() - start;
 	}
 
 	public long testLookup(Trie<Boolean> trie) {
 		long start = System.currentTimeMillis();
 		for (int i = 0; i < wordsToRead.length; ++i) {
-			if (trie.get(wordsToRead[i]) == null) {
-				throw new NullPointerException(trie.getClass().getSimpleName() + " " + new String(wordsToRead[i]));
-			}
+			trie.get(wordsToRead[i]);
 		}
 		return System.currentTimeMillis() - start;
 	}
 
 	public long testEnumerate(Trie<Boolean> trie) {
 		long start = System.currentTimeMillis();
-		Trie.Cursor<Boolean> cursor = trie.getCursor();
-		Trie.Node under = cursor.getNode();
-		while (Tries.moveToNextSuffix(under, cursor, Trie.Traversal.DEPTH_FIRST)) {}
+		if (trie instanceof HashMapTrie) {
+			Iterator<?> it = ((HashMapTrie<?>) trie).map.entrySet().iterator();
+			while (it.hasNext()) {
+				it.next();
+			}
+		} else {
+			Trie.Cursor<Boolean> cursor = trie.getCursor();
+			Trie.Node under = cursor.getNode();
+			while (Tries.moveToNextSuffix(under, cursor, Trie.Traversal.BREADTH_FIRST_THEN_DEPTH)) {}
+		}
 		return System.currentTimeMillis() - start;
 	}
 
@@ -119,15 +139,16 @@ public class PerfBenchmark extends Benchmark {
 		testTrimToSize(trie);
 		testLookup(trie);
 		try {
-			//testEnumerate(trie);
+			testEnumerate(trie);
 		} catch (UnsupportedOperationException e) { /* ignore */ }
 		try {
-			//testNeighbors(trie);
+//			testNeighbors(trie);
 		} catch (UnsupportedOperationException e) { /* ignore */ }
 		for (int i = 0; i < n; ++i) {
 			trie = factory.newTrie();
 			stats.insert += testInsert(trie);
 			stats.trim += testTrimToSize(trie);
+			testLookup(trie);
 			stats.lookup += testLookup(trie);
 			try {
 				//stats.enumerate += testEnumerate(trie);
@@ -135,7 +156,7 @@ public class PerfBenchmark extends Benchmark {
 				stats.enumerate -= 1;
 			}
 			try {
-				//stats.neighbors += testNeighbors(trie);
+//				stats.neighbors += testNeighbors(trie);
 			} catch (UnsupportedOperationException e) {
 				stats.neighbors -= 1;
 			}

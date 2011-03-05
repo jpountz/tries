@@ -1,6 +1,5 @@
 package net.jpountz.trie;
 
-import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
 import it.unimi.dsi.fastutil.chars.CharCollection;
 
 
@@ -13,69 +12,6 @@ abstract class AbstractTrie<T> implements Trie<T> {
 	protected static abstract class AbstractCursor<T> implements Cursor<T> {
 
 		protected abstract CharSequence getLabelInternal();
-
-		@Override
-		public char getFirstEdgeLabel() {
-			if (moveToFirstChild()) {
-				char result = getEdgeLabel();
-				moveToParent();
-				return result;
-			} else {
-				return '\0';
-			}
-		}
-
-		public boolean hasChildren() {
-			return getFirstEdgeLabel() == '\0';
-		}
-
-		@Override
-		public Node getFirstChildNode() {
-			if (moveToFirstChild()) {
-				Node result = getNode();
-				moveToParent();
-				return result;
-			}
-			return null;
-		}
-		@Override
-		public char getBrotherEdgeLabel() {
-			char c = getEdgeLabel();
-			if (moveToBrother()) {
-				char result = getEdgeLabel();
-				moveToParent();
-				moveToChild(c);
-				return result;
-			} else {
-				return '\0';
-			}
-		}
-
-		public boolean hasBrother() {
-			return getBrotherEdgeLabel() == '\0';
-		}
-
-		@Override
-		public Node getBrotherNode() {
-			char edge = getEdgeLabel();
-			if (moveToBrother()) {
-				Node result = getNode();
-				moveToParent();
-				moveToChild(edge);
-				return result;
-			}
-			return null;
-		}
-
-		@Override
-		public void getChildren(Char2ObjectMap<Node> children) {
-			if (moveToFirstChild()) {
-				do {
-					children.put(getEdgeLabel(), getNode());
-				} while (moveToBrother());
-				moveToParent();
-			}
-		}
 
 		@Override
 		public String getLabel() {
@@ -162,19 +98,6 @@ abstract class AbstractTrie<T> implements Trie<T> {
 		}
 
 		@Override
-		public Node getFirstChildNode() {
-			return null;
-		}
-
-		@Override
-		public Node getBrotherNode() {
-			return null;
-		}
-
-		@Override
-		public void getChildren(Char2ObjectMap children) {}
-
-		@Override
 		public boolean isAtRoot() {
 			return true;
 		}
@@ -223,6 +146,9 @@ abstract class AbstractTrie<T> implements Trie<T> {
 		public boolean removeChild(char c) {
 			return false;
 		}
+
+		@Override
+		public void removeChildren() {}
 
 		@Override
 		public boolean moveToParent() {
@@ -370,7 +296,9 @@ abstract class AbstractTrie<T> implements Trie<T> {
 	}
 
 	public void remove(char[] buffer, int offset, int length) {
-		put(buffer, offset, length, null);
+		if (get(buffer, offset, length) != null) {
+			put(buffer, offset, length, null);
+		}
 	}
 
 	public void remove(char[] buffer) {
@@ -378,7 +306,9 @@ abstract class AbstractTrie<T> implements Trie<T> {
 	}
 
 	public void remove(CharSequence sequence, int offset, int length) {
-		put(sequence, offset, length, null);
+		if (get(sequence, offset, length) != null) {
+			put(sequence, offset, length, null);
+		}
 	}
 
 	public void remove(CharSequence sequence) {
@@ -415,6 +345,11 @@ abstract class AbstractTrie<T> implements Trie<T> {
 
 	public int size() {
 		return getCursor().size();
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return size() == 1 && get("") == null;
 	}
 
 }

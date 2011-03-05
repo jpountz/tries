@@ -1,12 +1,14 @@
 package net.jpountz.trie;
 
-import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
 import it.unimi.dsi.fastutil.chars.CharCollection;
 
 /**
  * A trie. http://en.wikipedia.org/wiki/Trie.
  *
- * Unless otherwise specified, instances of this class are not thread-safe.
+ * Unless otherwise specified, instances of this class:
+ *  - are not thread-safe,
+ *  - do not support keys containing '\0',
+ *  - do not support null values.
  *
  * @param <T> the value type
  */
@@ -185,6 +187,21 @@ public interface Trie<T> {
 	}
 
 	/**
+	 * Indicates that this object can be compiled to a read-only copy that
+	 * is likely to provide better performance for read-only operations.
+	 *
+	 * @param <T> the value type
+	 */
+	public interface Compilable<T> {
+		/**
+		 * Compile this object.
+		 *
+		 * @return a compiled copy of the trie
+		 */
+		Trie<T> compile();
+	}
+
+	/**
 	 * An opaque reference to a node of the trie.
 	 */
 	public interface Node {}
@@ -204,58 +221,9 @@ public interface Trie<T> {
 		Node getNode();
 
 		/**
-		 * Return the first child.
+		 * Get whether the cursor is at the root node.
 		 *
-		 * @return
-		 */
-		Node getFirstChildNode();
-
-		/**
-		 * Get the label leading to the first child node.
-		 *
-		 * @return the char or '\0' if there is no first child
-		 */
-		char getFirstEdgeLabel();
-
-		/**
-		 * Get whether there are children under this.
-		 *
-		 * @return
-		 */
-		boolean hasChildren();
-
-		/**
-		 * Return the first brother.
-		 *
-		 * @return the brother node
-		 */
-		Node getBrotherNode();
-
-		/**
-		 * Get the label leading to the first brother of the node.
-		 *
-		 * @return the char or '\0' if there is no brother
-		 */
-		char getBrotherEdgeLabel();
-
-		/**
-		 * Get whether there is a brother.
-		 *
-		 * @return
-		 */
-		boolean hasBrother();
-
-		/**
-		 * Get the children of this node.
-		 *
-		 * @param children
-		 */
-		void getChildren(Char2ObjectMap<Node> children);
-
-		/**
-		 * Get whether the cursor is at root.
-		 *
-		 * @return true if, and only if the cursor is at root
+		 * @return true if, and only if the cursor is at the root node
 		 */
 		boolean isAtRoot();
 
@@ -324,6 +292,11 @@ public interface Trie<T> {
 		 * @param c the child label
 		 */
 		boolean removeChild(char c);
+
+		/**
+		 * Remove all the node's children.
+		 */
+		void removeChildren();
 
 		/**
 		 * Move to the parent node.
@@ -415,4 +388,11 @@ public interface Trie<T> {
 	 * @return the number of nodes in the trie.
 	 */
 	int size();
+
+	/**
+	 * Whether the trie is empty.
+	 *
+	 * @return true if, and only of the trie is empty
+	 */
+	boolean isEmpty();
 }

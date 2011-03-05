@@ -8,6 +8,11 @@ public class HashMapTrieTest extends AbstractTrieTest {
 	}
 
 	@Override
+	public void testRemove() {
+		// not supported
+	}
+
+	@Override
 	public void testCursor() {
 		// not supported
 	}

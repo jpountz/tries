@@ -1,7 +1,7 @@
 package net.jpountz.trie;
 
-import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
 import it.unimi.dsi.fastutil.chars.CharCollection;
+import net.jpountz.trie.RadixTrie.LabelsInternable;
 
 /**
  * A composite trie composed of a root trie, and several sub-tries.
@@ -79,40 +79,11 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 		}
 
 		@Override
-		public Node getFirstChildNode() {
-			if (moveToFirstChild()) {
-				Node result = getNode();
-				moveToParent();
-				return result;
-			}
-			return null;
-		}
-
-		@Override
-		public Node getBrotherNode() {
-			if (childCursor.isAtRoot() || childCursor.isAtRoot()) {
-				return new CompositeNode(rootCursor.getBrotherNode(), null);
-			} else {
-				return new CompositeNode(rootCursor.getNode(), childCursor.getNode());
-			}
-		}
-
-		@Override
 		public Node getNode() {
 			return new CompositeNode(rootCursor.getNode(),
 					childCursor == null || childCursor.isAtRoot()
 						? null
 						: childCursor.getNode());
-		}
-
-		@Override
-		public void getChildren(Char2ObjectMap<Node> children) {
-			if (moveToFirstChild()) {
-				do {
-					children.put(getEdgeLabel(), getNode());
-				} while (moveToBrother());
-				moveToParent();
-			}
 		}
 
 		@Override
@@ -240,6 +211,15 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 		}
 
 		@Override
+		public void removeChildren() {
+			if (childCursor != null) {
+				childCursor.removeChildren();
+			} else {
+				rootCursor.removeChildren();
+			}
+		}
+
+		@Override
 		public boolean moveToParent() {
 			if (childCursor != null) {
 				if (childCursor.moveToParent()) {
@@ -347,7 +327,7 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 		this.childFactory = childFactory;
 		Trie<T> subTrie = this.childFactory.newTrie();
 		subTriesAreOptimizable = subTrie instanceof Optimizable;
-		subTriesAreTrimmable   = subTrie instanceof Trimmable;
+		subTriesAreTrimmable   = subTrie instanceof Trimmable || subTrie instanceof LabelsInternable;
 	}
 
 	@Override
@@ -385,6 +365,36 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 		}
 	}
 
+	@Override
+	public void remove(char[] buffer, int offset, int length) {
+		if (length < rootDepth) {
+			backend.remove(buffer, offset, length);
+		} else {
+			Trie<?> sub = (Trie<?>) backend.get(buffer, offset, rootDepth);
+			if (sub != null) {
+				sub.remove(buffer, offset + rootDepth, length - rootDepth);
+				if (sub.isEmpty()) {
+					backend.remove(buffer, offset, rootDepth);
+				}
+			}
+		}
+	}
+
+	@Override
+	public void remove(CharSequence buffer, int offset, int length) {
+		if (length <= rootDepth) {
+			backend.remove(buffer, offset, length);
+		} else {
+			Trie<?> sub = (Trie<?>) backend.get(buffer, offset, rootDepth);
+			if (sub != null) {
+				sub.remove(buffer, offset + rootDepth, length - rootDepth);
+				if (sub.isEmpty()) {
+					backend.remove(buffer, offset, rootDepth);
+				}
+			}
+		}
+	}
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public T get(char[] buffer, int offset, int length) {
@@ -417,8 +427,6 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 
 	@Override
 	public void clear() {
-		//root.clear();
-		//subTries.clear();
 		backend.clear();
 	}
 
@@ -428,6 +436,7 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 			((Trimmable) backend).trimToSize();
 		}
 		if (subTriesAreTrimmable) {
+			Trie<char[]> interner = null;
 			Cursor<Object> cursor = backend.getCursor();
 			Node root = cursor.getNode();
 			do {
@@ -441,7 +450,15 @@ public class CompositeTrie<T> extends AbstractTrie<T> implements Trie.Optimizabl
 				}
 				Object value = cursor.getValue();
 				if (value != null) {
-					((Trimmable) value).trimToSize();
+					if (value instanceof Trimmable) {
+						((Trimmable) value).trimToSize();
+					}
+					if (value instanceof LabelsInternable) {
+						if (interner == null) {
+							interner = new FastArrayTrie<char[]>();
+						}
+						((LabelsInternable) value).internLabels(interner);
+					}
 				}
 			} while (Trie.Traversal.BREADTH_FIRST.moveToNextNode(root, cursor));
 		}

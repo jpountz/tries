@@ -5,13 +5,12 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 
 import java.util.Arrays;
 
-import net.jpountz.trie.Trie.Optimizable;
-import net.jpountz.trie.Trie.Trimmable;
-
 /**
  * Trie implementation based on backing arrays.
  */
-abstract class ArrayTrie<T> extends AbstractTrie<T> implements Optimizable, Trimmable {
+abstract class ArrayTrie<T> extends AbstractTrie<T> {
+
+	protected static final int[] EMPTY_INT_ARRAY = new int[0];
 
 	private static class ArrayTrieNode implements Node {
 
@@ -55,23 +54,13 @@ abstract class ArrayTrie<T> extends AbstractTrie<T> implements Optimizable, Trim
 			this.parents = parents;
 		}
 
-		@Override
-		protected CharSequence getLabelInternal() {
-			return label;
-		}
-
 		public ArrayTrieCursor(ArrayTrie<T> trie) {
 			this(trie, START, new IntArrayList(), new StringBuilder());
 		}
 
 		@Override
-		public Node getBrotherNode() {
-			int brother = trie.brother(current);
-			if (brother == NOT_FOUND) {
-				return null;
-			} else {
-				return new ArrayTrieNode(brother);
-			}
+		protected CharSequence getLabelInternal() {
+			return label;
 		}
 
 		public int getNodeId() {
@@ -140,8 +129,12 @@ abstract class ArrayTrie<T> extends AbstractTrie<T> implements Optimizable, Trim
 
 		@Override
 		public boolean removeChild(char c) {
-			// TODO
-			return false;
+			return trie.removeChild(current, c);
+		}
+
+		@Override
+		public void removeChildren() {
+			trie.removeChildren(current);
 		}
 
 		@Override
@@ -236,28 +229,49 @@ abstract class ArrayTrie<T> extends AbstractTrie<T> implements Optimizable, Trim
 	protected static final int DEFAULT_CAPACITY = 255;
 	protected static final float DEFAULT_GROWTH_FACTOR = 2f;
 
+	protected final int initialCapacity;
 	protected final float growthFactor;
 	protected int size;
+	protected int deletedCount;
+	protected int[] deleted;
 	protected Object[] values;
 	protected int[] brothers;
 	protected char[] labels;
 
 	public ArrayTrie(int initialCapacity, float growthFactor) {
 		this(initialCapacity, growthFactor, 1, new Object[initialCapacity],
-				new int[initialCapacity], new char[initialCapacity]);
+				new int[initialCapacity], new char[initialCapacity],
+				0, EMPTY_INT_ARRAY);
 		validate(initialCapacity, growthFactor);
 		Arrays.fill(brothers, NOT_FOUND);
 	}
 
 	protected ArrayTrie(int initialCapacity, float growthFactor, int size,
-			Object[] values, int[] brothers, char[] labels) {
+			Object[] values, int[] brothers, char[] labels, int deletedCount,
+			int[] deleted) {
 		validate(initialCapacity, growthFactor);
+		this.initialCapacity = initialCapacity;
 		this.growthFactor = growthFactor;
 		this.size = size;
 		this.values = values;
 		this.brothers = brothers;
 		this.labels = labels;
+		this.deleted = deleted;
+		this.deletedCount = deletedCount;
 	}
+
+	protected void setDeleted(int node) {
+		if (deletedCount == deleted.length) {
+			int newCapacity = Math.max(initialCapacity,
+					(int) (growthFactor * deletedCount));
+			deleted = Arrays.copyOf(deleted, newCapacity);
+		}
+		deleted[deletedCount++] = node;
+		setBrother(node, NOT_FOUND);
+	}
+
+	protected abstract boolean removeChild(int node, char c);
+	protected abstract void removeChildren(int node);
 
 	protected int getCapacity() {
 		return values.length;
@@ -307,7 +321,6 @@ abstract class ArrayTrie<T> extends AbstractTrie<T> implements Optimizable, Trim
 		}
 	}
 
-	@Override
 	public void trimToSize() {
 		brothers = Arrays.copyOf(brothers, size);
 		labels = Arrays.copyOf(labels, size);
@@ -321,9 +334,14 @@ abstract class ArrayTrie<T> extends AbstractTrie<T> implements Optimizable, Trim
 	}
 
 	protected int newNode() {
+		if (deletedCount > 0) {
+			return deleted[--deletedCount];
+		}
 		int capacity = getCapacity();
 		if (size >= capacity) {
-			ensureCapacity((int) Math.ceil(growthFactor * capacity));
+			int newCapacity = Math.max(initialCapacity,
+					(int) Math.ceil(growthFactor * capacity));
+			ensureCapacity(newCapacity);
 		}
 		return size++;
 	}
@@ -397,8 +415,60 @@ abstract class ArrayTrie<T> extends AbstractTrie<T> implements Optimizable, Trim
 	}
 
 	@Override
+	public void remove(char[] buffer, int offset, int length) {
+		if (length == 0) {
+			put("", null);
+			return;
+		}
+		int node = START, nodeToRemove = START;
+		char childToRemove = buffer[offset];
+		for (int i = 0; i < length; ++i) {
+			char c = buffer[offset+i];
+			int child = child(node, c);
+			if (child == NOT_FOUND) {
+				return;
+			}
+			if (brother(child(node)) != NOT_FOUND) {
+				// several brothers
+				nodeToRemove = node;
+				childToRemove = c;
+			}
+			node = child;
+		}
+		if (nodeToRemove != NOT_FOUND && child(node) == NOT_FOUND) {
+			removeChild(nodeToRemove, childToRemove);
+		}
+	}
+
+	@Override
+	public void remove(CharSequence sequence, int offset, int length) {
+		if (length == 0) {
+			put("", null);
+			return;
+		}
+		int node = START, nodeToRemove = START;
+		char childToRemove = sequence.charAt(offset);
+		for (int i = 0; i < length; ++i) {
+			char c = sequence.charAt(offset+i);
+			int child = child(node, c);
+			if (child == NOT_FOUND) {
+				return;
+			}
+			if (brother(child(node)) != NOT_FOUND) {
+				// several brothers
+				nodeToRemove = node;
+				childToRemove = c;
+			}
+			node = child;
+		}
+		if (nodeToRemove != NOT_FOUND && child(node) == NOT_FOUND) {
+			removeChild(nodeToRemove, childToRemove);
+		}
+	}
+
+	@Override
 	public int size() {
-		return size;
+		return size - deletedCount;
 	}
 
 }

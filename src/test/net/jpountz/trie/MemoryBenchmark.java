@@ -9,7 +9,7 @@ public class MemoryBenchmark extends Benchmark {
 		if (args.length == 0) {
 			throw new IllegalArgumentException("Missing argument: file");
 		}
-		List<char[]> words = readWords(args[0]);
+		List<String> words = readWords(args[0]);
 		MemoryBenchmark pb = new MemoryBenchmark(words);
 		int n = 5;
 		for (TrieFactory<Boolean> factory : FACTORIES) {
@@ -22,10 +22,10 @@ public class MemoryBenchmark extends Benchmark {
 		}
 	}
 
-	private final char[][] words;
+	private final String[] words;
 
-	public MemoryBenchmark(List<char[]> words) {
-		this.words = words.toArray(new char[words.size()][]);
+	public MemoryBenchmark(List<String> words) {
+		this.words = words.toArray(new String[words.size()]);
 	}
 
 	private static class Stats {
@@ -48,13 +48,21 @@ public class MemoryBenchmark extends Benchmark {
 		gc();
 		before = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 		Trie<Boolean> trie = factory.newTrie();
-		for (char[] word : words) {
-			trie.put(word, Boolean.TRUE);
+		for (String word : words) {
+			trie.put(new String(word), Boolean.TRUE); // ensure the string is not shared
 		}
 		gc();
 		afterInsert = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 		if (trie instanceof Trie.Trimmable) {
 			((Trie.Trimmable) trie).trimToSize();
+		}
+		if (trie instanceof RadixTrie.LabelsInternable) {
+			((RadixTrie.LabelsInternable) trie).internLabels(new TrieFactory<char[]>() {
+				@Override
+				public Trie<char[]> newTrie() {
+					return new CompactArrayTrie<char[]> ();
+				}
+			});
 		}
 		gc();
 		afterTrim = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
