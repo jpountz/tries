@@ -67,7 +67,7 @@
   <target name="test_perf" depends="compile-tests">
     <input message="File containing the words to read:" addproperty="writes" />
     <input message="File containing the words to read:" addproperty="reads" />
-    <java classname="net.jpountz.trie.ReadPerfBenchmark" fork="true">
+    <java classname="net.jpountz.charsequence.collect.ReadPerfBenchmark" fork="true">
       <jvmarg value="-Xms250m" />
       <jvmarg value="-Xmx250m" />
       <jvmarg value="-server" />
@@ -86,9 +86,10 @@
 
   <target name="test_mem" depends="compile-tests">
     <input message="Words to insert:" addproperty="writes" />
-    <java classname="net.jpountz.trie.MemoryBenchmark" fork="true">
+    <java classname="net.jpountz.charsequence.collect.MemoryBenchmark" fork="true">
       <jvmarg value="-Xms250m" />
       <jvmarg value="-Xmx250m" />
+      <jvmarg value="-XX:+UseCompressedStrings" />
       <jvmarg value="-server" />
       <arg value="${writes}" />
       <classpath>
