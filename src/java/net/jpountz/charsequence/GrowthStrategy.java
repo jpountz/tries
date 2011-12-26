@@ -19,7 +19,6 @@ public interface GrowthStrategy {
 	 */
 	public static final GrowthStrategy FAST_GROWTH = new GrowthStrategy() {
 
-		@Override
 		public int grow(int minimum) {
 			if (minimum <= 0) {
 				return 1;
@@ -37,7 +36,6 @@ public interface GrowthStrategy {
 		private static final int MAX_BYTES_PER_ELEMENT = 8;
 		private static final int MASK = 0x7ffffff8;
 
-		@Override
 		public int grow(int minimum) {
 			if (minimum < MAX_BYTES_PER_ELEMENT) {
 				return MAX_BYTES_PER_ELEMENT;

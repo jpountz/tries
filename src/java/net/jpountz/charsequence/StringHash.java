@@ -10,7 +10,6 @@ public class StringHash implements Hash {
 
 	private StringHash() {} // no instantiation
 
-	@Override
 	public int hash(char[] buffer, int offset, int length) {
 		final int prime = 31;
 		int hash = 0;
@@ -21,7 +20,6 @@ public class StringHash implements Hash {
 		return hash;
 	}
 
-	@Override
 	public int hash(CharSequence sequence, int offset, int length) {
 		if (sequence instanceof String && offset == 0 && length == sequence.length()) {
 			// because string hashs are cached

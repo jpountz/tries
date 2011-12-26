@@ -19,85 +19,85 @@ public abstract class AbstractCharSequenceMapTest extends TestCase {
 	public void test1() {
 		map.put("ab", 1);
 		map.put("abcd", 2);
-		assertEquals(1, map.get("ab").intValue());
-		assertEquals(2, map.get("abcd").intValue());
+		assertEquals(Integer.valueOf(1), map.get("ab"));
+		assertEquals(Integer.valueOf(2), map.get("abcd"));
 	}
 
 	public void test2() {
 		map.put("abcd", 2);
 		map.put("ab", 1);
-		assertEquals(1, map.get("ab").intValue());
-		assertEquals(2, map.get("abcd").intValue());
+		assertEquals(Integer.valueOf(1), map.get("ab"));
+		assertEquals(Integer.valueOf(2), map.get("abcd"));
 	}
 
 	public void test3() {
 		map.put("abcd", 1);
 		map.put("abef", 2);
-		assertEquals(1, map.get("abcd").intValue());
-		assertEquals(2, map.get("abef").intValue());
+		assertEquals(Integer.valueOf(1), map.get("abcd"));
+		assertEquals(Integer.valueOf(2), map.get("abef"));
 	}
 
 	public void test4() {
 		map.put("abef", 2);
 		map.put("abcd", 1);
-		assertEquals(1, map.get("abcd").intValue());
-		assertEquals(2, map.get("abef").intValue());
+		assertEquals(Integer.valueOf(1), map.get("abcd"));
+		assertEquals(Integer.valueOf(2), map.get("abef"));
 	}
 
 	public void test5() {
 		map.put("abcd", 1);
 		map.put("abef", 2);
 		map.put("abefgh", 3);
-		assertEquals(1, map.get("abcd").intValue());
-		assertEquals(2, map.get("abef").intValue());
-		assertEquals(3, map.get("abefgh").intValue());
+		assertEquals(Integer.valueOf(1), map.get("abcd"));
+		assertEquals(Integer.valueOf(2), map.get("abef"));
+		assertEquals(Integer.valueOf(3), map.get("abefgh"));
 	}
 
 	public void test6() {
 		map.put("abcd", 1);
 		map.put("abefgh", 3);
 		map.put("abef", 2);
-		assertEquals(1, map.get("abcd").intValue());
-		assertEquals(2, map.get("abef").intValue());
-		assertEquals(3, map.get("abefgh").intValue());
+		assertEquals(Integer.valueOf(1), map.get("abcd"));
+		assertEquals(Integer.valueOf(2), map.get("abef"));
+		assertEquals(Integer.valueOf(3), map.get("abefgh"));
 	}
 
 	public void test7() {
 		map.put("abcd", 1);
 		map.put("abgh", 3);
 		map.put("abef", 2);
-		assertEquals(1, map.get("abcd").intValue());
-		assertEquals(2, map.get("abef").intValue());
-		assertEquals(3, map.get("abgh").intValue());
+		assertEquals(Integer.valueOf(1), map.get("abcd"));
+		assertEquals(Integer.valueOf(2), map.get("abef"));
+		assertEquals(Integer.valueOf(3), map.get("abgh"));
 	}
 
 	public void test8() {
 		map.put("abcdef", 1);
 		map.put("abcdfg", 2);
 		map.put("abij", 3);
-		assertEquals(1, map.get("abcdef").intValue());
-		assertEquals(2, map.get("abcdfg").intValue());
-		assertEquals(3, map.get("abij").intValue());
+		assertEquals(Integer.valueOf(1), map.get("abcdef"));
+		assertEquals(Integer.valueOf(2), map.get("abcdfg"));
+		assertEquals(Integer.valueOf(3), map.get("abij"));
 	}
 
 	public void test9() {
 		map.put("abcd", 1);
 		map.put("abef", 2);
 		map.put("abab", 3);
-		//trie.put("ABCD", 4);
-		assertEquals(1, map.get("abcd").intValue());
-		assertEquals(2, map.get("abef").intValue());
-		assertEquals(3, map.get("abab").intValue());
-		//assertEquals(4, trie.get("ABCD").intValue());
+		map.put("ABCD", 4);
+		assertEquals(Integer.valueOf(1), map.get("abcd"));
+		assertEquals(Integer.valueOf(2), map.get("abef"));
+		assertEquals(Integer.valueOf(3), map.get("abab"));
+		assertEquals(Integer.valueOf(4), map.get("ABCD"));
 	}
 
 	public void test10() {
 		map.put("ab", 1);
 		map.put("abcd", 2);
 		map.put("a", 0);
-		assertEquals(0, map.get("a").intValue());
-		assertEquals(1, map.get("ab").intValue());
-		assertEquals(2, map.get("abcd").intValue());
+		assertEquals(Integer.valueOf(0), map.get("a"));
+		assertEquals(Integer.valueOf(1), map.get("ab"));
+		assertEquals(Integer.valueOf(2), map.get("abcd"));
 	}
 
 	public void testEntrySet1() {

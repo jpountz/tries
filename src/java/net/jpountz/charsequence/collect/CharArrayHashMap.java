@@ -120,9 +120,13 @@ public class CharArrayHashMap<V> extends AbstractCharSequenceMap<V> {
 		}
 		if (keys[i] == null) {
 			keys[i] = new char[key.length()];
-			int o = offset;
-			for (int k = 0; k < length; ++k) {
-				keys[i][k] = key.charAt(o++);
+			if (key instanceof String) {
+				((String) key).getChars(offset, length, keys[i], 0);
+			} else {
+				int o = offset;
+				for (int k = 0; k < length; ++k) {
+					keys[i][k] = key.charAt(o++);
+				}
 			}
 			++size;
 		}

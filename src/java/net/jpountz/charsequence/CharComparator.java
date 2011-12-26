@@ -12,7 +12,6 @@ public interface CharComparator {
 	 */
 	public static final CharComparator DEFAULT = new CharComparator() {
 
-		@Override
 		public int compare(char c1, char c2) {
 			return (int) c1 - c2;
 		}
