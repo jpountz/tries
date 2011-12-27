@@ -41,7 +41,7 @@ public class ArrayTrie<T> extends AbstractListTrie<T> implements Trie.Optimizabl
 	@Override
 	protected int firstChild(int position) {
 		int[] cs = children[position];
-		if (cs.length > 1) {
+		if (cs[0] > 0) {
 			return cs[1];
 		}
 		return NOT_FOUND;
@@ -208,9 +208,8 @@ public class ArrayTrie<T> extends AbstractListTrie<T> implements Trie.Optimizabl
 					removeChildren(child);
 					setDeleted(child);
 				}
-				cs[i] = NOT_FOUND;
 			}
-			cs[0] = 0;
+			children[node] = NO_CHILD;
 		}
 	}
 
