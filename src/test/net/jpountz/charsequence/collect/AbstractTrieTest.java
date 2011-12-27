@@ -26,18 +26,25 @@ public abstract class AbstractTrieTest extends AbstractCharSequenceMapTest {
 		trie.put("abcdef", 3);
 		trie.put("abcfgh", 4);
 		trie.put("abchij", 5);
+
 		assertEquals(13, trie.nodes());
+
 		trie.remove("abc");
 		assertEquals(13, trie.nodes());
+
 		trie.remove("abcdefgh");
 		assertEquals(13, trie.nodes());
+
 		trie.remove("abcfgh");
 		assertEquals(10, trie.nodes());
 		assertEquals(Integer.valueOf(3), trie.get("abcdef"));
 		assertEquals(Integer.valueOf(5), trie.get("abchij"));
+		assertNull(trie.get("abcfgh"));
+
 		trie.remove("abcdef");
 		assertEquals(7, trie.nodes());
 		assertEquals(Integer.valueOf(5), trie.get("abchij"));
+
 		trie.remove("abchij");
 		assertEquals(1, trie.nodes());
 		assertFalse(trie.getCursor().moveToFirstChild());
