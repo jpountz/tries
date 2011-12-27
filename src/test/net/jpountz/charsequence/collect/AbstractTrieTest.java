@@ -12,7 +12,7 @@ import net.jpountz.charsequence.collect.Trie.Cursor;
 
 public abstract class AbstractTrieTest extends AbstractCharSequenceMapTest {
 
-	private Trie<Integer> trie;
+	protected Trie<Integer> trie;
 
 	public abstract Trie<Integer> newMap();
 
@@ -23,9 +23,9 @@ public abstract class AbstractTrieTest extends AbstractCharSequenceMapTest {
 	}
 
 	public void testRemove() {
-		trie.put("abcdef", 3);
-		trie.put("abcfgh", 4);
-		trie.put("abchij", 5);
+		put("abcdef", 3);
+		put("abcfgh", 4);
+		put("abchij", 5);
 
 		assertEquals(13, trie.nodes());
 
@@ -58,7 +58,7 @@ public abstract class AbstractTrieTest extends AbstractCharSequenceMapTest {
 		assertFalse(Trie.Traversal.BREADTH_FIRST_THEN_DEPTH.moveToNextNode(root, cursor));
 	}
 
-	public void testCursor() {
+	public void testCursorRW() {
 		Cursor<Integer> cursor = trie.getCursor();
 		assertFalse(cursor.moveToParent());
 		CharArrayList children = new CharArrayList();
@@ -83,10 +83,10 @@ public abstract class AbstractTrieTest extends AbstractCharSequenceMapTest {
 		assertEquals(1, children.size());
 	}
 
-	public void testCursor2() {
-		trie.put("abc", 2);
-		trie.put("accc", 3);
-		trie.put("acaa", 4);
+	public void testCursorR() {
+		put("abc", 2);
+		put("accc", 3);
+		put("acaa", 4);
 		Trie.Cursor<Integer> cursor = trie.getCursor();
 		assertFalse(cursor.moveToBrother());
 		assertTrue(cursor.moveToFirstChild());
@@ -105,12 +105,12 @@ public abstract class AbstractTrieTest extends AbstractCharSequenceMapTest {
 	}
 
 	public void testMoveToNextSuffix() {
-		trie.put("ab", 1);
-		trie.put("abcd", 2);
-		trie.put("aed", 4);
-		trie.put("aedfg", 5);
-		trie.put("aef", 3);
-		trie.put("a", 0);
+		put("ab", 1);
+		put("abcd", 2);
+		put("aed", 4);
+		put("aedfg", 5);
+		put("aef", 3);
+		put("a", 0);
 		Cursor<Integer> cursor = trie.getCursor();
 		cursor.moveToChild('a');
 		Trie.Node under = cursor.getNode();
@@ -129,15 +129,15 @@ public abstract class AbstractTrieTest extends AbstractCharSequenceMapTest {
 	}
 
 	public void testMoveToNextNode(Trie.Traversal traversal, String[] labels) {
-		trie.put("aef", 3);
-		trie.put("ab", 1);
-		trie.put("abcd", 2);
-		trie.put("aedfg", 4);
-		trie.put("aed", 5);
-		trie.put("a", 0);
-		trie.put("ed", 5);
-		trie.put("efg", 8);
-		trie.put("eg", 12);
+		put("aef", 3);
+		put("ab", 1);
+		put("abcd", 2);
+		put("aedfg", 4);
+		put("aed", 5);
+		put("a", 0);
+		put("ed", 5);
+		put("efg", 8);
+		put("eg", 12);
 		int n = 0;
 		Cursor<Integer> cursor = trie.getCursor();
 		for (String label : labels) {
@@ -176,11 +176,11 @@ public abstract class AbstractTrieTest extends AbstractCharSequenceMapTest {
 	}
 
 	public void testGetNeightbors() {
-		trie.put("aabc", 1);
-		trie.put("acd", 2);
-		trie.put("zabc", 3);
-		trie.put("abcde", 4);
-		trie.put("abcdefg", 10);
+		put("aabc", 1);
+		put("acd", 2);
+		put("zabc", 3);
+		put("abcde", 4);
+		put("abcdefg", 10);
 		
 		Comparator<Map.Entry<String, Integer>> comparator = new Comparator<Map.Entry<String, Integer>>() {
 			public int compare(Entry<String, Integer> o1,
