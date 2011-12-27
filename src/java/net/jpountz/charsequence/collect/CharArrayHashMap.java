@@ -1,7 +1,10 @@
 package net.jpountz.charsequence.collect;
 
+import java.util.AbstractMap;
+import java.util.AbstractSet;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 import net.jpountz.charsequence.Hash;
@@ -28,9 +31,9 @@ public class CharArrayHashMap<V> extends AbstractCharSequenceMap<V> {
 		this.loadFactor = DEFAULT_LOAD_FACTOR;
 		keys = new char[DEFAULT_INITIAL_CAPACITY][];
 		values = new Object[DEFAULT_INITIAL_CAPACITY];
-		mask = keys.length-1;
+		mask = keys.length - 1;
 		threshold = (int) (loadFactor * keys.length);
-		
+
 	}
 
 	private int indexFor(CharSequence sequence, int offset, int length) {
@@ -41,7 +44,8 @@ public class CharArrayHashMap<V> extends AbstractCharSequenceMap<V> {
 		return hash.hash(sequence, offset, length) & mask;
 	}
 
-	private static boolean equals(char[] s, CharSequence key, int offset, int length) {
+	private static boolean equals(char[] s, CharSequence key, int offset,
+			int length) {
 		if (length == s.length) {
 			int o = offset;
 			for (int i = 0; i < length; ++i) {
@@ -71,7 +75,7 @@ public class CharArrayHashMap<V> extends AbstractCharSequenceMap<V> {
 	@Override
 	public V get(CharSequence key, int offset, int length) {
 		int start = indexFor(key, offset, length);
-		for (int i = start; keys[i] != null; i = (i+1) & mask) {
+		for (int i = start; keys[i] != null; i = (i + 1) & mask) {
 			if (equals(keys[i], key, offset, length)) {
 				return (V) values[i];
 			}
@@ -83,7 +87,7 @@ public class CharArrayHashMap<V> extends AbstractCharSequenceMap<V> {
 	@Override
 	public V get(char[] key, int offset, int length) {
 		int start = indexFor(key, offset, length);
-		for (int i = start; keys[i] != null; i = (i+1) & mask) {
+		for (int i = start; keys[i] != null; i = (i + 1) & mask) {
 			if (equals(keys[i], key, offset, length)) {
 				return (V) values[i];
 			}
@@ -113,7 +117,7 @@ public class CharArrayHashMap<V> extends AbstractCharSequenceMap<V> {
 	public V put(CharSequence key, int offset, int length, V value) {
 		ensureCapacity();
 		int i = indexFor(key, offset, length);
-		for ( ; keys[i] != null; i = (i+1) & mask) {
+		for (; keys[i] != null; i = (i + 1) & mask) {
 			if (equals(keys[i], key, offset, length)) {
 				break;
 			}
@@ -140,13 +144,13 @@ public class CharArrayHashMap<V> extends AbstractCharSequenceMap<V> {
 	public V put(char[] key, int offset, int length, V value) {
 		ensureCapacity();
 		int i = indexFor(key, offset, length);
-		for ( ; keys[i] != null; i = (i+1) & mask) {
+		for (; keys[i] != null; i = (i + 1) & mask) {
 			if (equals(keys[i], key, offset, length)) {
 				break;
 			}
 		}
 		if (keys[i] == null) {
-			keys[i] = Arrays.copyOfRange(key, offset, offset+length);
+			keys[i] = Arrays.copyOfRange(key, offset, offset + length);
 			++size;
 		}
 		@SuppressWarnings("unchecked")
@@ -157,7 +161,66 @@ public class CharArrayHashMap<V> extends AbstractCharSequenceMap<V> {
 
 	@Override
 	public Set<java.util.Map.Entry<String, V>> entrySet() {
-		return Collections.emptySet();
+		return new AbstractSet<Map.Entry<String, V>>() {
+
+			@Override
+			public Iterator<java.util.Map.Entry<String, V>> iterator() {
+				return new Iterator<java.util.Map.Entry<String, V>>() {
+
+					private int current;
+					private int next;
+
+					{
+						current = -1;
+						next = -1;
+						setNext();
+					}
+
+					private boolean setNext() {
+						if (next < keys.length) {
+							do {
+								++next;
+							} while (next < keys.length && keys[next] == null);
+						}
+
+						return next < keys.length;
+					}
+
+					@Override
+					public boolean hasNext() {
+						return (next != current && next < keys.length)
+								|| setNext();
+					}
+
+					@SuppressWarnings("unchecked")
+					@Override
+					public java.util.Map.Entry<String, V> next() {
+						if (hasNext()) {
+							current = next;
+							return new AbstractMap.SimpleImmutableEntry<String, V>(
+									new String(keys[current]),
+									(V) values[current]);
+						}
+						return null;
+					}
+
+					@Override
+					public void remove() {
+						if (current < 0) {
+							throw new IllegalStateException("Not positioned");
+						}
+						keys[current] = null;
+						values[current] = null;
+					}
+				};
+			}
+
+			@Override
+			public int size() {
+				return CharArrayHashMap.this.size();
+			}
+
+		};
 	}
 
 }
