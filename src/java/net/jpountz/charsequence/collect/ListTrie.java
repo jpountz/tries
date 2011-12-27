@@ -148,7 +148,7 @@ public class ListTrie<T> extends AbstractListTrie<T> implements Trie.Optimizable
 
 	public void optimizeFor(Trie.Traversal traversal) {
 		ListTrie<T> trie = new ListTrie<T>(size(), growthStrategy);
-		ArrayTrieCursor<T> cursor = getCursor();
+		AbstractListTrieCursor<T> cursor = getCursor();
 		Node node = cursor.getNode();
 		do {
 			trie.put(cursor.getLabelInternal(), cursor.getValue());

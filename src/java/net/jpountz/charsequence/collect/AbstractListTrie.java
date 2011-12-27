@@ -44,14 +44,14 @@ abstract class AbstractListTrie<T> extends AbstractTrie<T> {
 
 	}
 
-	static final class ArrayTrieCursor<T> extends AbstractCursor<T> {
+	static final class AbstractListTrieCursor<T> extends AbstractCursor<T> {
 
 		private StringBuilder label;
 		final AbstractListTrie<T> trie;
 		int current;
 		final IntArrayList parents;
 
-		protected ArrayTrieCursor(AbstractListTrie<T> trie, int current,
+		protected AbstractListTrieCursor(AbstractListTrie<T> trie, int current,
 				IntArrayList parents, StringBuilder label) {
 			this.label = label;
 			this.trie = trie;
@@ -59,7 +59,7 @@ abstract class AbstractListTrie<T> extends AbstractTrie<T> {
 			this.parents = parents;
 		}
 
-		public ArrayTrieCursor(AbstractListTrie<T> trie) {
+		public AbstractListTrieCursor(AbstractListTrie<T> trie) {
 			this(trie, START, new IntArrayList(), new StringBuilder());
 		}
 
@@ -209,8 +209,8 @@ abstract class AbstractListTrie<T> extends AbstractTrie<T> {
 		}
 
 		@Override
-		public ArrayTrieCursor<T> clone() {
-			return new ArrayTrieCursor<T>(trie, current,
+		public AbstractListTrieCursor<T> clone() {
+			return new AbstractListTrieCursor<T>(trie, current,
 					new IntArrayList(parents),
 					new StringBuilder(label));
 		}
@@ -345,8 +345,8 @@ abstract class AbstractListTrie<T> extends AbstractTrie<T> {
 	}
 
 	@Override
-	public ArrayTrieCursor<T> getCursor() {
-		return new ArrayTrieCursor<T>(this);
+	public AbstractListTrieCursor<T> getCursor() {
+		return new AbstractListTrieCursor<T>(this);
 	}
 
 	@Override
