@@ -10,4 +10,9 @@ public class ListRadixTrieTest extends AbstractTrieTest {
 		return new ListRadixTrie<Integer>();
 	}
 
+	@Override
+	public void testRemove() {
+	    // unsupported
+	}
+
 }
