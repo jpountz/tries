@@ -16,16 +16,4 @@ public enum CharSequenceUtils {
 		return result;
 	}
 
-	public static boolean equals(char[] seq1, int off1, int len1, CharSequence seq2, int off2, int len2) {
-		if (len1 == len2) {
-			for (int i = 0; i < len1; ++i) {
-				if (seq1[off1 + i] != seq2.charAt(off2 + i)) {
-					return false;
-				}
-			}
-			return true;
-		}
-		return false;
-	}
-
 }
