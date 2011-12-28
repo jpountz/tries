@@ -2,16 +2,18 @@ package net.jpountz.charsequence.collect;
 
 import java.nio.CharBuffer;
 import java.util.AbstractMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import net.jpountz.charsequence.CharComparator;
 
 
 /**
  * Algorithms performed on tries.
  */
-public class Tries {
-
-	private Tries() {}
+public enum Tries {
+	;
 
 	/**
 	 * Move to the next suffix in the order of traversal.
@@ -127,6 +129,25 @@ public class Tries {
 				cursor.moveToParent();
 			}
 		}
+	}
+
+	public static <T> Trie<T> sortedCharArrayListAsTrie(
+			List<char[]> keys, List<T> values, CharComparator comparator) {
+		return new CharArrayBinarySearchTrie<T>(keys, values, comparator);
+	}
+
+	public static <T> Trie<T> sortedCharArrayListAsTrie(List<char[]> keys, List<T> values) {
+		return sortedCharArrayListAsTrie(keys, values, null);
+	}
+
+	public static <K extends CharSequence, T> Trie<T> sortedCharSequenceListAsTrie(
+			List<K> keys, List<T> values, CharComparator comparator) {
+		return new CharSequenceBinarySearchTrie<K, T>(keys, values, comparator);
+	}
+
+	public static <K extends CharSequence, T> Trie<T> sortedCharSequenceListAsTrie(
+			List<K> keys, List<T> values) {
+		return sortedCharSequenceListAsTrie(keys, values, null);
 	}
 
 }
