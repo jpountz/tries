@@ -20,15 +20,15 @@ class CharArrayBinarySearchTrie<T> extends AbstractBinarySearchTrie<char[], T> {
 	@Override
 	protected int compare(
 			char[] key1, int off1, int len1,
-			char[] key2, int off2, int len2) {
-		return comparator.compare(key1, off1, len1, key2, off2, len2);
+			char[] key2) {
+		return comparator.compare(key1, off1, len1, key2, 0, key2.length);
 	}
 
 	@Override
 	protected int compare(
 			CharSequence key1, int off1, int len1,
-			char[] key2, int off2, int len2) {
-		return comparator.compare(key1, off1, len1, key2, off2, len2);
+			char[] key2) {
+		return comparator.compare(key1, off1, len1, key2, 0, key2.length);
 	}
 
 	@Override
@@ -41,4 +41,8 @@ class CharArrayBinarySearchTrie<T> extends AbstractBinarySearchTrie<char[], T> {
 		return key[offset];
 	}
 
+	@Override
+	protected String toString(char[] key) {
+		return new String(key);
+	}
 }

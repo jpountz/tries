@@ -4,12 +4,11 @@ import it.unimi.dsi.fastutil.chars.CharArrayList;
 
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.Map.Entry;
 
 import net.jpountz.charsequence.CommonEditWeight;
-import net.jpountz.charsequence.EditDistance;
 import net.jpountz.charsequence.collect.Trie.Cursor;
 
 public abstract class AbstractTrieTest extends AbstractCharSequenceMapTest {

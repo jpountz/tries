@@ -1,7 +1,12 @@
 package net.jpountz.charsequence.collect;
 
+import java.util.AbstractMap;
+import java.util.AbstractSet;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import net.jpountz.charsequence.CharComparator;
 
@@ -229,7 +234,7 @@ abstract class AbstractBinarySearchTrie<K, T> extends AbstractTrie<T> {
 		public T getValue() {
 			if (trie.keys.size() > 0) {
 				K key = trie.keys.get(peekLowParent());
-				if (trie.compare(label, 0, label.length(), key, 0, trie.size(key)) == 0) {
+				if (trie.compare(label, 0, label.length(), key) == 0) {
 					return trie.values.get(peekLowParent());
 				}
 			}
@@ -275,9 +280,10 @@ abstract class AbstractBinarySearchTrie<K, T> extends AbstractTrie<T> {
 		}
 	}
 
-	protected abstract int compare(char[] key1, int offset1, int length1, K key2, int offset2, int length2);
-	protected abstract int compare(CharSequence key1, int offset1, int length1, K key2, int offset2, int length2);
+	protected abstract int compare(char[] key1, int offset1, int length1, K key2);
+	protected abstract int compare(CharSequence key1, int offset1, int length1, K key2);
 	protected abstract int size(K key);
+	protected abstract String toString(K key);
 	protected abstract char charAt(K key, int offset);
 
 	int binarySearch(CharSequence key, int offset, int length) {
@@ -285,7 +291,7 @@ abstract class AbstractBinarySearchTrie<K, T> extends AbstractTrie<T> {
 		while (lo <= hi) {
 			int mid = (lo + hi) >>> 1;
 			K midVal = keys.get(mid);
-			int cmp = compare(key, offset, length, midVal, 0, size(midVal));
+			int cmp = compare(key, offset, length, midVal);
 			if (cmp < 0) {
 				hi = mid - 1;
 			} else if (cmp > 0) {
@@ -302,7 +308,7 @@ abstract class AbstractBinarySearchTrie<K, T> extends AbstractTrie<T> {
 		while (lo <= hi) {
 			int mid = (lo + hi) >>> 1;
 			K midVal = keys.get(mid);
-			int cmp = compare(key, offset, length, midVal, 0, size(midVal));
+			int cmp = compare(key, offset, length, midVal);
 			if (cmp < 0) {
 				hi = mid - 1;
 			} else if (cmp > 0) {
@@ -337,4 +343,46 @@ abstract class AbstractBinarySearchTrie<K, T> extends AbstractTrie<T> {
 		return new BinarySearchTrieCursor<K, T>(this);
 	}
 
+	@Override
+	public Set<Map.Entry<String, T>> entrySet() {
+		return new AbstractSet<Map.Entry<String,T>>() {
+
+			@Override
+			public Iterator<java.util.Map.Entry<String, T>> iterator() {
+				return new Iterator<Map.Entry<String,T>>() {
+
+					private int i = 0;
+
+					@Override
+					public boolean hasNext() {
+						return i < keys.size();
+					}
+
+					@Override
+					public java.util.Map.Entry<String, T> next() {
+						if (hasNext()) {
+							AbstractMap.SimpleImmutableEntry<String, T> result =
+								new AbstractMap.SimpleImmutableEntry<String, T>(
+									AbstractBinarySearchTrie.this.toString(keys.get(i)),
+									values.get(i));
+							++i;
+							return result;
+						}
+						return null;
+					}
+
+					@Override
+					public void remove() {
+						throw new UnsupportedOperationException();
+					}
+				};
+			}
+
+			@Override
+			public int size() {
+				return keys.size();
+			}
+
+		};
+	}
 }
