@@ -2,11 +2,14 @@ package net.jpountz.charsequence.collect;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import net.jpountz.charsequence.CharComparator;
 
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -117,13 +120,21 @@ public class ReadPerfBenchmark extends Benchmark {
 	public Stats test(CharSequenceMapFactory factory, int n) {
 		Stats stats = new Stats();
 		Map<String, String> map = factory.newMap();
-		testInsert(map);
+		if (!(map instanceof AbstractBinarySearchTrie))
+			testInsert(map);
 		testTrimToSize(map);
 		testLookup(map);
 		testEnumerate(map);
 		for (int i = 0; i < n; ++i) {
 			map = factory.newMap();
-			stats.insert += testInsert(map);
+			if (map instanceof AbstractBinarySearchTrie) {
+				stats.insert = -1;
+				String[] keys = Arrays.copyOf(wordsToWrite, wordsToWrite.length);
+				Arrays.sort(keys, CharComparator.DEFAULT.asCharSequenceComparator());
+				map = Tries.sortedCharSequenceListAsTrie(Arrays.asList(keys), Arrays.asList(keys));
+			} else {
+				stats.insert += testInsert(map);
+			}
 			stats.lookupUnoptimized += testLookup(map);
 			stats.trim += testTrimToSize(map);
 			stats.lookup += testLookup(map);

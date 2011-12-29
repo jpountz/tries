@@ -4,10 +4,13 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import net.jpountz.charsequence.CharComparator;
 
 public class Benchmark {
 
@@ -30,13 +33,13 @@ public class Benchmark {
 				return new CharArrayHashMap<String>();
 			}			
 		},
-		COMPACT_ARRAY_TRIE {
+		LIST_TRIE {
 			@Override
 			Map<String, String> newMap() {
 				return new ListTrie<String>();
 			}
 		},
-		COMPACT_ARRAY_RADIX_TRIE {
+		LIST_RADIX_TRIE {
 			@Override
 			Map<String, String> newMap() {
 				return new ListRadixTrie<String>();
@@ -62,10 +65,16 @@ public class Benchmark {
 			}
 			
 		},
-		FAST_ARRAY_TRIE {
+		ARRAY_TRIE {
 			@Override
 			Map<String, String> newMap() {
 				return new ArrayTrie<String>();
+			}
+		},
+		BINARY_SEARCH_TRIE {
+			@Override
+			Map<String, String> newMap() {
+				return Tries.sortedCharSequenceListAsTrie(Collections.<String>emptyList(), Collections.<String>emptyList());
 			}
 		};
 		abstract Map<String, String> newMap();
