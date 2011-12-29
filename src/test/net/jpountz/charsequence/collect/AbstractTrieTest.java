@@ -8,6 +8,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.Map.Entry;
 
+import net.jpountz.charsequence.CommonEditWeight;
+import net.jpountz.charsequence.EditDistance;
 import net.jpountz.charsequence.collect.Trie.Cursor;
 
 public abstract class AbstractTrieTest extends AbstractCharSequenceMapTest {
@@ -104,6 +106,26 @@ public abstract class AbstractTrieTest extends AbstractCharSequenceMapTest {
 		assertNotNull(cursor.getValue());
 	}
 
+	public void testCursorR2() {
+		put("abc", 2);
+		put("accc", 3);
+		put("acaa", 4);
+		Trie.Cursor<Integer> cursor = trie.getCursor();
+		assertFalse(cursor.moveToParent());
+		assertEquals(1, cursor.getChildrenSize());
+		assertFalse(cursor.moveToChild('c'));
+		assertTrue(cursor.moveToChild('a'));
+		assertEquals(2, cursor.getChildrenSize());
+		assertTrue(cursor.moveToChild('b'));
+		assertTrue(cursor.moveToParent());
+		assertTrue(cursor.moveToChild('c'));
+		assertNull(cursor.getValue());
+		assertTrue(cursor.moveToChild('a'));
+		assertTrue(cursor.moveToChild('a'));
+		assertFalse(cursor.moveToChild('a'));
+		assertNotNull(cursor.getValue());
+	}
+
 	public void testMoveToNextSuffix() {
 		put("ab", 1);
 		put("abcd", 2);
@@ -190,8 +212,14 @@ public abstract class AbstractTrieTest extends AbstractCharSequenceMapTest {
 		};
 		
 		SortedSet<Map.Entry<String, Integer>> neighbors = new TreeSet<Map.Entry<String, Integer>>(comparator);
-		Tries.getNeighbors("abc", trie, 2, neighbors);
-		assertEquals(4, neighbors.size());
+		Tries.getNeighbors("abc", trie, CommonEditWeight.DAMEREAU_LEVENSHTEIN, 2, neighbors);
+		assertEquals(neighbors.toString(), 4, neighbors.size());
+		neighbors.clear();
+		Tries.getNeighbors("bc", trie, CommonEditWeight.DAMEREAU_LEVENSHTEIN, 2, neighbors);
+		assertEquals(neighbors.toString(), 3, neighbors.size());
+		neighbors.clear();
+		Tries.getNeighbors("bc", trie, CommonEditWeight.INSERTION_DELETION, 2, neighbors);
+		assertEquals(neighbors.toString(), 2, neighbors.size());
 	}
 
 }
