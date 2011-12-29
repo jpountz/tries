@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import net.jpountz.charsequence.CharComparator;
-
 public class Benchmark {
 
 	public enum CharSequenceMapFactory {
