@@ -296,9 +296,11 @@ public abstract class Automaton<State> extends AbstractAccepter {
 
 	}
 
+	protected final CharComparator comparator;
 	protected Set<State> finalStates;
 
-	protected Automaton() {
+	protected Automaton(CharComparator comparator) {
+		this.comparator = comparator == null ? CharComparator.DEFAULT : comparator;
 		this.finalStates = new HashSet<State>();
 	}
 
