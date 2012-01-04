@@ -13,6 +13,8 @@ import net.jpountz.charsequence.Automata.DistanceState;
 
 public class AutomataTest extends TestCase {
 
+	CharSet alphabet = new CharAVLTreeSet(new char[] {'a', 'b', 'c'});
+
 	private static SortedSet<String> toCollection(Iterable<String> i) {
 		TreeSet<String> result = new TreeSet<String>();
 		for (String s : i) {
@@ -36,7 +38,6 @@ public class AutomataTest extends TestCase {
 	public void testEditDistance() {
 		Automaton<DistanceState> automaton = Automata.forEditWeight("ab",
 				CommonEditWeight.DAMEREAU_LEVENSHTEIN, 1);
-		CharSet alphabet = new CharAVLTreeSet(new char[] {'a', 'b', 'c'});
 		assertEquals(toCollection(
 				"a", "aa", "aab", "ab", "aba", "abb", "abc", "ac", "acb",
 				"b", "ba", "bab", "bb",
@@ -57,12 +58,17 @@ public class AutomataTest extends TestCase {
 		automaton.setFinal(2);
 		assertEquals(8, automaton.getNumberOfStates());
 		automaton.removeUselessStates();
-		System.out.println(automaton.getStates().keySet());
 		assertEquals(4, automaton.getNumberOfStates());
+		assertTrue(automaton.accept("da"));
+		assertTrue(automaton.accept("dd"));
+		assertTrue(automaton.accept("b"));
 	}
 
-	public void testRemoveUselessStates() {
+	public void testRemoveUselessStatesNFA() {
 		testRemoveUselessStates(new NFA<Object>(0));
+	}
+
+	public void testRemoveUselessStatesDFA() {
 		testRemoveUselessStates(new DFA<Object>(0));
 	}
 
@@ -97,6 +103,7 @@ public class AutomataTest extends TestCase {
 		dfa.addDefaultTransition(1, 4);
 		dfa.addDefaultTransition(3, 4);
 		dfa.addDefaultTransition(2, 4);
+		dfa.addDefaultTransition(5, 6);
 		dfa.setFinal(4);
 		return dfa;
 	}
@@ -104,7 +111,7 @@ public class AutomataTest extends TestCase {
 	public void testMinimizeBrzozowski() {
 		CharSet alphabet = new CharAVLTreeSet(new char[] {'a', 'b', 'c'});
 		DFA<Integer> dfa = newDFA();
-		assertEquals(5, dfa.getNumberOfStates());
+		assertEquals(7, dfa.getNumberOfStates());
 		DFA<Set<Set<Integer>>> dfa2 = dfa.minimizeBrzozowski();
 		assertEquals(3, dfa2.getNumberOfStates());
 		assertEquals(
@@ -115,9 +122,9 @@ public class AutomataTest extends TestCase {
 	public void testMinimizeHopCroft() {
 		CharSet alphabet = new CharAVLTreeSet(new char[] {'a', 'b', 'c'});
 		DFA<Integer> dfa = newDFA();
-		assertEquals(5, dfa.getNumberOfStates());
+		assertEquals(7, dfa.getNumberOfStates());
+		dfa.removeUselessStates();
 		DFA<Set<Integer>> dfa2 = dfa.minimizeHopCroft();
-		System.out.println(dfa2);
 		assertEquals(3, dfa2.getNumberOfStates());
 		assertEquals(
 				toCollection(dfa.getDictionary(alphabet)),
