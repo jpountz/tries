@@ -65,7 +65,7 @@ public enum Automata {
 					word.charAt(i));
 			previous = current;
 		}
-		result.setFinal(previous);
+		result.addFinal(previous);
 		return result;
 	}
 
@@ -78,7 +78,7 @@ public enum Automata {
 		states.addFirst(initialState);
 
 		DistanceState finalState = new DistanceState("", 0);
-		automaton.setFinal(finalState);
+		automaton.addFinal(finalState);
 
 		while (states.peekFirst() != null) {
 			DistanceState state = states.pollFirst();

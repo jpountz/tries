@@ -24,12 +24,12 @@ import net.jpountz.charsequence.util.ImmutableSet;
 /**
  * A non-deterministic finite-state automate.
  */
-public class NFA<State> extends Automaton<State> {
+public class NFA<State> extends AbstractFA<State> {
 
 	private static final int EPSILON = Character.MAX_VALUE + 1;
 	private static final int ANY = Character.MAX_VALUE + 2;
 
-	static class NFAStateWrapper<State> extends Automaton.StateWrapper<State> {
+	static class NFAStateWrapper<State> extends AbstractFA.StateWrapper<State> {
 
 		final Char2ObjectMap<List<NFAStateWrapper<State>>> mappedTransitions;
 		List<NFAStateWrapper<State>> defaultTransitions;
@@ -56,12 +56,12 @@ public class NFA<State> extends Automaton<State> {
 		}
 
 		@Override
-		public Collection<? extends net.jpountz.charsequence.Automaton.StateWrapper<State>> getDefaultTransitions() {
+		public Collection<? extends net.jpountz.charsequence.AbstractFA.StateWrapper<State>> getDefaultTransitions() {
 			return defaultTransitions;
 		}
 
 		@Override
-		public Collection<? extends net.jpountz.charsequence.Automaton.StateWrapper<State>> getEpsilonTransitions() {
+		public Collection<? extends net.jpountz.charsequence.AbstractFA.StateWrapper<State>> getEpsilonTransitions() {
 			return epsilonTransitions;
 		}
 
@@ -363,12 +363,12 @@ public class NFA<State> extends Automaton<State> {
 	}
 
 	@Override
-	public Automaton.AutomatonConsumer<State> getConsumer() {
+	public AutomatonConsumer<State> getConsumer() {
 		return new NFA.NFAConsumer<State>(this);
 	}
 
 	@Override
-	protected Map<State, ? extends net.jpountz.charsequence.Automaton.StateWrapper<State>> getStates() {
+	protected Map<State, ? extends net.jpountz.charsequence.AbstractFA.StateWrapper<State>> getStates() {
 		return states;
 	}
 
@@ -401,7 +401,7 @@ public class NFA<State> extends Automaton<State> {
 
 			for (State s : state) {
 				if (isFinal(s)) {
-					dfa.setFinal(state);
+					dfa.addFinal(state);
 					break;
 				}
 			}

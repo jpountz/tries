@@ -28,7 +28,7 @@ public class AutomataTest extends TestCase {
 	}
 
 	public void testForWord() {
-		Automaton<Integer> automaton = Automata.forWord("tables");
+		AbstractFA<Integer> automaton = Automata.forWord("tables");
 		CharSet alphabet = new CharAVLTreeSet("abcdefgh tables".toCharArray());
 		assertEquals(
 				toCollection("tables"),
@@ -36,7 +36,7 @@ public class AutomataTest extends TestCase {
 	}
 
 	public void testEditDistance() {
-		Automaton<DistanceState> automaton = Automata.forEditWeight("ab",
+		AbstractFA<DistanceState> automaton = Automata.forEditWeight("ab",
 				CommonEditWeight.DAMEREAU_LEVENSHTEIN, 1);
 		assertEquals(toCollection(
 				"a", "aa", "aab", "ab", "aba", "abb", "abc", "ac", "acb",
@@ -45,7 +45,7 @@ public class AutomataTest extends TestCase {
 				toCollection(automaton.getDictionary(alphabet)));
 	}
 
-	public void testRemoveUselessStates(Automaton<Object> automaton) {
+	public void testRemoveUselessStates(AbstractFA<Object> automaton) {
 		automaton.addTransition(0, 1, 'd');
 		automaton.addDefaultTransition(1, 2);
 		automaton.addDefaultTransition(0, 3);
@@ -55,7 +55,7 @@ public class AutomataTest extends TestCase {
 		automaton.addTransition(2, 7, 'a');
 		automaton.addDefaultTransition(7, 2);
 		automaton.addTransition(0, 2, 'b');
-		automaton.setFinal(2);
+		automaton.addFinal(2);
 		assertEquals(8, automaton.getNumberOfStates());
 		automaton.removeUselessStates();
 		assertEquals(4, automaton.getNumberOfStates());
@@ -73,9 +73,9 @@ public class AutomataTest extends TestCase {
 	}
 
 	public void testReverse() {
-		Automaton<DistanceState> automaton = Automata.forEditWeight("ab",
+		AbstractFA<DistanceState> automaton = Automata.forEditWeight("ab",
 				CommonEditWeight.DAMEREAU_LEVENSHTEIN, 1);
-		Automaton<DistanceState> automaton2 = automaton.reverse().reverse();
+		AbstractFA<DistanceState> automaton2 = automaton.reverse().reverse();
 		CharSet alphabet = new CharAVLTreeSet(new char[] {'a', 'b', 'c'});
 		assertEquals(
 				toCollection(automaton.getDictionary(alphabet)),
@@ -104,7 +104,7 @@ public class AutomataTest extends TestCase {
 		dfa.addDefaultTransition(3, 4);
 		dfa.addDefaultTransition(2, 4);
 		dfa.addDefaultTransition(5, 6);
-		dfa.setFinal(4);
+		dfa.addFinal(4);
 		return dfa;
 	}
 

@@ -21,9 +21,9 @@ import net.jpountz.charsequence.util.ImmutableSet;
 /**
  * A deterministic finite-state machine.
  */
-public class DFA<State> extends Automaton<State> {
+public class DFA<State> extends AbstractFA<State> {
 
-	static class DFAStateWrapper<State> extends Automaton.StateWrapper<State> {
+	static class DFAStateWrapper<State> extends AbstractFA.StateWrapper<State> {
 
 		final Char2ObjectMap<DFAStateWrapper<State>> mappedTransitions;
 
@@ -189,7 +189,7 @@ public class DFA<State> extends Automaton<State> {
 	}
 
 	@Override
-	public Automaton.AutomatonConsumer<State> getConsumer() {
+	public AutomatonConsumer<State> getConsumer() {
 		return new DFA.DFAConsumer<State>(this);
 	}
 
@@ -272,7 +272,7 @@ public class DFA<State> extends Automaton<State> {
 		for (DFAStateWrapper<State> state : states.values()) {
 			Set<State> from = mapping.get(state.state);
 			if (isFinal(state.state)) {
-				dfa.setFinal(from);
+				dfa.addFinal(from);
 			}
 
 			for (Map.Entry<Character, DFAStateWrapper<State>> entry : state.mappedTransitions.entrySet()) {
