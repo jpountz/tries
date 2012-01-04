@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -93,6 +94,20 @@ public class NFA<State> extends Automaton<State> {
 					to.getEpsilonReachableStates(result);
 				}
 			}
+		}
+
+		@Override
+		public void retainTransitions(
+				Collection<? extends StateWrapper<State>> to) {
+			for (Iterator<List<NFAStateWrapper<State>>> it = mappedTransitions.values().iterator(); it.hasNext(); ) {
+				List<NFAStateWrapper<State>> next = it.next();
+				next.retainAll(to);
+				if (next.isEmpty()) {
+					it.remove();
+				}
+			}
+			defaultTransitions.retainAll(to);
+			epsilonTransitions.retainAll(to);
 		}
 
 	}

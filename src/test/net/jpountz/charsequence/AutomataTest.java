@@ -44,6 +44,28 @@ public class AutomataTest extends TestCase {
 				toCollection(automaton.getDictionary(alphabet)));
 	}
 
+	public void testRemoveUselessStates(Automaton<Object> automaton) {
+		automaton.addTransition(0, 1, 'd');
+		automaton.addDefaultTransition(1, 2);
+		automaton.addDefaultTransition(0, 3);
+		automaton.addTransition(3, 4, 'b');
+		automaton.addTransition(5, 6, 'c');
+		automaton.addDefaultTransition(6, 2);
+		automaton.addTransition(2, 7, 'a');
+		automaton.addDefaultTransition(7, 2);
+		automaton.addTransition(0, 2, 'b');
+		automaton.setFinal(2);
+		assertEquals(8, automaton.getNumberOfStates());
+		automaton.removeUselessStates();
+		System.out.println(automaton.getStates().keySet());
+		assertEquals(4, automaton.getNumberOfStates());
+	}
+
+	public void testRemoveUselessStates() {
+		testRemoveUselessStates(new NFA<Object>(0));
+		testRemoveUselessStates(new DFA<Object>(0));
+	}
+
 	public void testReverse() {
 		Automaton<DistanceState> automaton = Automata.forEditWeight("ab",
 				CommonEditWeight.DAMEREAU_LEVENSHTEIN, 1);
@@ -81,8 +103,8 @@ public class AutomataTest extends TestCase {
 
 	public void testMinimizeBrzozowski() {
 		CharSet alphabet = new CharAVLTreeSet(new char[] {'a', 'b', 'c'});
-		DFA<Integer> dfa = newDFA(); dfa.addDefaultTransition(5, 6);
-		//assertEquals(5, dfa.getNumberOfStates());
+		DFA<Integer> dfa = newDFA();
+		assertEquals(5, dfa.getNumberOfStates());
 		DFA<Set<Set<Integer>>> dfa2 = dfa.minimizeBrzozowski();
 		assertEquals(3, dfa2.getNumberOfStates());
 		assertEquals(
@@ -92,8 +114,8 @@ public class AutomataTest extends TestCase {
 
 	public void testMinimizeHopCroft() {
 		CharSet alphabet = new CharAVLTreeSet(new char[] {'a', 'b', 'c'});
-		DFA<Integer> dfa = newDFA(); dfa.addDefaultTransition(5, 6);
-		//assertEquals(5, dfa.getNumberOfStates());
+		DFA<Integer> dfa = newDFA();
+		assertEquals(5, dfa.getNumberOfStates());
 		DFA<Set<Integer>> dfa2 = dfa.minimizeHopCroft();
 		System.out.println(dfa2);
 		assertEquals(3, dfa2.getNumberOfStates());

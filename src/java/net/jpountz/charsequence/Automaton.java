@@ -118,6 +118,8 @@ public abstract class Automaton<State> extends AbstractAccepter {
 
 		public abstract Collection<? extends StateWrapper<State>> getEpsilonTransitions();
 
+		public abstract void retainTransitions(Collection<? extends StateWrapper<State>> states);
+
 		@Override
 		public final int hashCode() {
 			return state == null ? 0 : state.hashCode();
@@ -416,6 +418,54 @@ public abstract class Automaton<State> extends AbstractAccepter {
 		reverse.setFinal(getInitialState());
 
 		return reverse;
+	}
+
+	Set<StateWrapper<State>> getReachableStates() {
+		Set<StateWrapper<State>> reachable = new HashSet<StateWrapper<State>>();
+		reachable.add(getWrappedInitialState());
+
+		Deque<StateWrapper<State>> stack = new ArrayDeque<StateWrapper<State>>(reachable);
+
+		while (!stack.isEmpty()) {
+
+			StateWrapper<State> state = stack.pollFirst();
+
+			for (CharIterator it = state.getMappedChars().iterator(); it.hasNext(); ) {
+				char c = it.nextChar();
+				for (StateWrapper<State> next : state.getTransitions(c)) {
+					if (reachable.add(next)) {
+						stack.addFirst(next);
+					}
+				}
+			}
+
+			for (StateWrapper<State> next : state.getDefaultTransitions()) {
+				if (reachable.add(next)) {
+					stack.addFirst(next);
+				}
+			}
+
+			for (StateWrapper<State> next : state.getEpsilonTransitions()) {
+				if (reachable.add(next)) {
+					stack.addFirst(next);
+				}
+			}
+		}
+
+		return reachable;
+	}
+
+	public void removeUselessStates() {
+		Set<StateWrapper<State>> reachable = getReachableStates();
+		Set<StateWrapper<State>> canReachEnd = reverse().getReachableStates();
+
+		Collection<? extends StateWrapper<State>> states = getStates().values();
+		states.retainAll(reachable);
+		states.retainAll(canReachEnd);
+
+		for (StateWrapper<State> state : states) {
+			state.retainTransitions(states);
+		}
 	}
 
 	public DFA<Set<Set<State>>> minimizeBrzozowski() {

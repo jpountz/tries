@@ -61,6 +61,20 @@ public class DFA<State> extends Automaton<State> {
 			return Collections.emptySet();
 		}
 
+		@Override
+		public void retainTransitions(
+				Collection<? extends StateWrapper<State>> to) {
+			for (Iterator<DFAStateWrapper<State>> it = mappedTransitions.values().iterator(); it.hasNext(); ) {
+				if (!to.contains(it.next())) {
+					it.remove();
+				}
+			}
+			if (mappedTransitions.defaultReturnValue() != null &&
+					!to.contains(mappedTransitions.defaultReturnValue())) {
+				mappedTransitions.defaultReturnValue(null);
+			}
+		}
+
 	}
 
 	private static class DFAConsumer<State> implements AutomatonConsumer<State> {
