@@ -6,7 +6,7 @@ import java.util.Comparator;
 /**
  * Comparator of characters.
  */
-public abstract class CharComparator {
+public abstract class CharComparator implements it.unimi.dsi.fastutil.chars.CharComparator {
 
 	/**
 	 * Default {@link CharComparator}. Returns:
@@ -22,6 +22,10 @@ public abstract class CharComparator {
 	};
 
 	public abstract int compare(char c1, char c2);
+
+	public final int compare(Character c1, Character c2) {
+		return compare(c1.charValue(), c2.charValue());
+	}
 
 	public final int compare(CharSequence key1, int off1, int len1, CharSequence key2, int off2, int len2) {
 		int len = Math.min(len1, len2);
