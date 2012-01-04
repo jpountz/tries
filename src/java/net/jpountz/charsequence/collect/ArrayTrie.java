@@ -12,7 +12,6 @@ public class ArrayTrie<T> extends AbstractListTrie<T> implements Trie.Optimizabl
 
 	protected static final int DEFAULT_CHILDREN_CAPACITY = 5;
 	protected static final float DEFAULT_CHILDREN_GROWTH_FACTOR = 2f;
-	protected static final int[] NO_CHILD = new int[] { 0 };
 
 	protected final int initialChildrenCapacity;
 	protected final GrowthStrategy childrenGrowthStrategy;
@@ -24,7 +23,6 @@ public class ArrayTrie<T> extends AbstractListTrie<T> implements Trie.Optimizabl
 		this.initialChildrenCapacity = initialChildrenCapacity;
 		this.childrenGrowthStrategy = childrenGrowthStrategy;
 		children = new int[initialCapacity][];
-		Arrays.fill(children, NO_CHILD);
 	}
 
 	public ArrayTrie() {
@@ -35,13 +33,13 @@ public class ArrayTrie<T> extends AbstractListTrie<T> implements Trie.Optimizabl
 	@Override
 	protected void setDeleted(int node) {
 		super.setDeleted(node);
-		children[node] = NO_CHILD;
+		children[node] = null;
 	}
 
 	@Override
 	protected int firstChild(int position) {
 		int[] cs = children[position];
-		if (cs[0] > 0) {
+		if (cs != null && cs[0] > 0) {
 			return cs[1];
 		}
 		return NOT_FOUND;
@@ -50,12 +48,11 @@ public class ArrayTrie<T> extends AbstractListTrie<T> implements Trie.Optimizabl
 	@Override
 	protected int child(int node, char label) {
 		int[] cs = children[node];
-		int size = cs[0];
-		if (size > 0) {
+		if (cs != null && cs[0] > 0) {
 			int firstChild = cs[1];
 			char firstChildLabel = label(firstChild);
 			int offset = label - firstChildLabel;
-			if (offset >= 0 && offset < size) {
+			if (offset >= 0 && offset < cs[0]) {
 				return cs[offset+1];
 			}
 		}
@@ -65,13 +62,11 @@ public class ArrayTrie<T> extends AbstractListTrie<T> implements Trie.Optimizabl
 	@Override
 	protected int addChild(final int node, char c) {
 		int[] cs = children[node];
-		int size = cs[0];
+		int size = cs == null ? 0 : cs[0];
 		int child;
 		if (size == 0) {
-			if (cs.length == 1) {
-				cs = new int[1+initialChildrenCapacity];
-				Arrays.fill(cs, 2, cs.length, NOT_FOUND);
-			}
+			cs = new int[1+initialChildrenCapacity];
+			Arrays.fill(cs, 2, cs.length, NOT_FOUND);
 			child = newNode();
 			setLabel(child, c);
 			cs[0] = 1;
@@ -145,7 +140,7 @@ public class ArrayTrie<T> extends AbstractListTrie<T> implements Trie.Optimizabl
 	@Override
 	protected boolean removeChild(int node, char c) {
 		int[] cs = children[node];
-		if (cs[0] == 0) {
+		if (cs == null || cs[0] == 0) {
 			return false;
 		} else {
 			int firstChild = cs[1];
@@ -201,7 +196,7 @@ public class ArrayTrie<T> extends AbstractListTrie<T> implements Trie.Optimizabl
 	@Override
 	protected void removeChildren(int node) {
 		int[] cs = children[node];
-		if (cs[0] > 0) {
+		if (cs != null && cs[0] > 0) {
 			for (int i = 1; i <= cs[0]; ++i) {
 				int child = cs[i];
 				if (child != NOT_FOUND) {
@@ -209,7 +204,7 @@ public class ArrayTrie<T> extends AbstractListTrie<T> implements Trie.Optimizabl
 					setDeleted(child);
 				}
 			}
-			children[node] = NO_CHILD;
+			children[node] = null;
 		}
 	}
 
@@ -219,7 +214,6 @@ public class ArrayTrie<T> extends AbstractListTrie<T> implements Trie.Optimizabl
 		super.ensureCapacity(capacity);
 		if (capacity > previousCapacity) {
 			children = Arrays.copyOf(children, capacity);
-			Arrays.fill(children, previousCapacity, capacity, NO_CHILD);
 		}
 	}
 
@@ -229,9 +223,9 @@ public class ArrayTrie<T> extends AbstractListTrie<T> implements Trie.Optimizabl
 		children = Arrays.copyOf(children, size);
 		for (int i = 0; i < size; ++i) {
 			int[] cs = children[i];
-			int size = cs[0];
+			int size = cs == null ? 0 : cs[0];
 			if (size == 0) {
-				children[i] = NO_CHILD;
+				children[i] = null;
 			} else if (1+size < cs.length) {
 				children[i] = Arrays.copyOf(cs, 1+size);
 			}
@@ -241,7 +235,7 @@ public class ArrayTrie<T> extends AbstractListTrie<T> implements Trie.Optimizabl
 	@Override
 	public void clear() {
 		super.clear();
-		Arrays.fill(children, NO_CHILD);
+		Arrays.fill(children, null);
 	}
 
 	public void optimizeFor(Trie.Traversal traversal) {
